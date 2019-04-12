@@ -1,0 +1,36 @@
+{
+  "name": "node-red-contrib-queuemanager",
+  "version": "0.0.1",
+  "description": "Node-RED implements monetdb.",
+  "dependencies": {
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \\\"Error: no test specified\\\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peterprib/node-red-contrib-queuemanager.git"
+  },
+  "keywords": [
+    "node-red",
+    "queuemanager",
+    "rollback",
+    "queue",
+    "checkpoint"
+  ],
+  "node-red": {
+    "nodes": {
+      "queue": "queueManager/queue.js",
+      "queueManager": "queueManager/queueManager.js",
+      "queueCheckpoint": "queueManager/queueCheckpoint.js",
+      "queueRollback": "queueManager/queueRollback.js"
+    }
+  },
+  "author": "Peter Prib",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/peterprib/node-red-contrib-queuemanager/issues"
+  },
+  "homepage": "https://github.com/peterprib/node-red-contrib-queuemanager#readme"
+}

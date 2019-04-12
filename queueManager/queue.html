@@ -1,0 +1,59 @@
+<script type="text/x-red" data-help-name="Queue">
+    <p>Define a Queue</p>
+</script>
+
+<script type="text/x-red" data-template-name="Queue">
+
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-maxWaiting"><i class="icon-bookmark"></i> Max Waiting</label>
+        <input type="number" id="node-input-maxWaiting" step=10 min=0 max=100000 >
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-maxActive"><i class="icon-bookmark"></i> Max Active</label>
+        <input type="number" id="node-input-maxActive"step=1 min=0 max=1000  >
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-maxTime"><i class="icon-bookmark"></i> Max Time (millisecs)</label>
+        <input type="number" id="node-input-maxTime"step=100 min=100 max=100000 >
+    </div>
+
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('Queue',{
+    	category: 'function',
+        defaults: {
+            name: {value:"",required:false},
+            maxActive: {value:10,required:true,validate:RED.validators.number()},
+            maxWaiting: {value:100,required:true,validate:RED.validators.number()},
+            maxTime: {value:60000,required:true,validate:RED.validators.number()}, // 1 minute
+            queueManager: {required:true}
+        },
+	    inputs:1,
+        inputLabels: "",
+        outputs:1,
+        outputLabels: ["Response"],
+        icon: "icons8-inbox-64.png",
+        label: function() {
+            return this.name||this._("Queue");
+        },
+        labelStyle: function() {
+            return "node_label_italic";
+        },
+        oneditprepare: function() {
+        },
+        oneditsave: function() {
+        	var QMs = RED.nodes.filterNodes({type:"Queue Manager"});
+			this.queueManager = QMs.length===1?QMs[0]:undefined;
+        },
+        oneditresize: function(size) {
+        }
+    });
+</script>

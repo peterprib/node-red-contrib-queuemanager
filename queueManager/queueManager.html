@@ -1,0 +1,165 @@
+<script type="text/x-red" data-help-name="Queue Manager">
+    <p>Define a Queue Manager</p>
+    <p> 
+    Topic of message defines action on incoming payload
+    <dl>
+    <dt>list</dt>
+    <dd>JSON payload of metrics for all queues</dd>
+    <dt>pause</dt>
+    <dd>Queue all incoming messages</dd>
+    <dt>release</dt>
+    <dd>Activate queue processing</dd>
+    <dt>set</dt>
+    <dd>Change controlling parameters for queue manager</dd>
+    </dl>
+    </p>
+</script>
+
+<script type="text/x-red" data-template-name="Queue Manager">
+
+    <div class="form-row">
+        <label for="node-input-checkInterval"><i class="icon-bookmark"></i> Check Interval (millisecs)</label>
+        <input type="number" id="node-input-checkInterval">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-maxTime"><i class="icon-bookmark"></i> Max Time (millisecs)</label>
+        <input type="number" id="node-input-maxTime">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-maxWaiting"><i class="icon-bookmark"></i> Max Waiting</label>
+        <input type="number" id="node-input-maxWaiting">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-maxActive"><i class="icon-bookmark"></i> Max Active</label>
+        <input type="number" id="node-input-maxActive">
+    </div>
+
+    <div class="form-row node-input-nodes-container-row" style="margin-bottom:0px; width:100%; min-width:520px">
+        <label style="vertical-align:top;"><i class="fa fa-list-alt"></i> Nodes </label>
+          <div style="width:100%; display: inline-block; background-color:#f3f3f3; border-top:0px solid; border-radius:0 0 0 0; border-bottom:1px solid #ccc;">
+	            <table>
+ 	              	<tbody id="node-input-nodes-tbody" stype="display: block;  overflow: auto; max-width:400px; max-height: 400px;">
+                		<tr style="padding-left:4px; border-bottom: 1px solid black; background: lightblue; position: sticky; top: 0;">
+                			<td>Queue</td>
+                			<td>Check Point</td>
+                			<td>Roll Back</td>
+                			<td>Type</td>
+                			<td>Id</td>
+                			<td style="min-width: 300px;" >Name</td>
+                			<td style="min-width: 60px;">Max Active</td>
+                			<td style="min-width: 100px;">Max Waiting</td>
+                			<td style="min-width: 100px;">Max Time</td>
+                		</tr>
+                	</tbody>
+                </table>
+        </div>
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('Queue Manager',{
+    	category: 'function',
+        defaults: {
+            checkInterval: {value:1000,required:true,validate:RED.validators.number()}, // 1 sceond
+            maxActive: {value:100,required:true,validate:RED.validators.number()},
+            maxWaiting: {value:1000,required:true,validate:RED.validators.number()},
+            maxTime: {value:60000,required:true,validate:RED.validators.number()}, // 1 minute
+            setqueues:{value:{}},
+            setcheckpoints:{value:{}},
+            setrollbacks:{value:{}},
+        },
+	    inputs:1,
+        inputLabels: "",
+        outputs:1,
+        outputLabels: ["Response"],
+        icon: "icons8-networking-manager-64.png",
+        label: function() {
+            return this._("Queue Manager");
+        },
+        labelStyle: function() {
+            return "node_label_italic";
+        },
+        oneditprepare: function() {
+        	var qm,node=this,
+               	nodes=$("#node-input-nodes-tbody");
+	        var nodesAll = RED.nodes.filterNodes({});
+			$.getJSON("queuemanager/list",function(data) {
+  		        qm=data;
+            	for (let n of nodesAll) {
+            		if(n.id==node.id) continue;
+            		if(["debug"].includes(n.type)) continue;
+            		generateNode(n,qm);
+            	}
+             	$('#node-input-nodes-tbody tr td:first-child input').change(function () {
+            		if($(this).is(':checked')){
+            			$(this).parents("tr").find("input:gt(2)").show();
+            		} else {
+            			$(this).parents("tr").find("input:gt(2)").hide();
+            		}
+				});
+           });
+          function generateNode(n,qm) {
+            	var nq=(qm.queues||{})[n.id];
+            	var nc=(qm.checkpoints||{})[n.id]; 
+            	var nr=(qm.rollbacks||{})[n.id]; 
+            	var nr=n.type=="Queue Rollback"; 
+            	var readonly=["Queue","Queue Checkpoint","Queue Rollback"].includes(n.type);
+            	var row=$('<tr/>').appendTo(nodes);
+				$('<td/>').append($('<input />', { 
+						type: 'checkbox',
+						checked:(nq!==undefined),
+						readonly:readonly
+					})).appendTo(row); //Queue
+				$('<td/>').append($('<input />', {
+						type:'checkbox',
+						checked:nc,
+						readonly:readonly
+					})).appendTo(row); //Checkpoint
+				$('<td/>').append($('<input />', {
+						type:'checkbox',
+						checked:nr,
+						readonly:readonly
+					})).appendTo(row); //Checkpoint
+					
+				$('<td/>').text(n.type).appendTo(row); //type  
+				$('<td/>').text(n.id).appendTo(row); //id
+				$('<td/>').text(n.name||n.type).appendTo(row); // name 
+				$('<td/>').append($('<input '+(readonly?'readonly':'')+' value='+(nq?nq.maxActive:10)+' type="number" min=0 max=999999 style="width:100%; border:0;'+(nq?'':'display:none;"')+'" />')).appendTo(row); // Max Active
+				$('<td/>').append($('<input '+(readonly?'readonly':'')+' value='+(nq?nq.maxWaiting:100)+' type="number" step=10 min=0 max=999999 style="width:100%; border:0;'+(nq?'':'display:none;')+'" />')).appendTo(row); // Max Waiting
+				$('<td/>').append($('<input '+(readonly?'readonly':'')+' value='+(nq?nq.maxTime:10000)+' type="number" step=100 min=100 max=999999 style="width:100%; border:0;'+(nq?'':'display:none;')+'" />')).appendTo(row); // Max Time
+	         }
+        },
+        oneditsave: function() {
+        	var r,n,inputs,node=this;
+        	node.setqueues={};
+        	$('#node-input-nodes-tbody tr td:first-child input').filter(':checked').map(function () {
+        		r=$(this).parents("tr");
+        		n=r.find("td:eq(4)").text();
+            	inputs=r.find("input:gt(2)");
+            	node.setqueues[n]={
+            		maxActive:inputs[0].value,
+                	maxWaiting:inputs[1].value, 
+                	maxTime:inputs[2].value
+                };
+			});
+			node.setcheckpoints={};
+        	$('#node-input-nodes-tbody tr td:nth-child(2) input').filter(':checked').map(function () {
+        		r=$(this).parents("tr");
+        		n=r.find("td:eq(4)").text();
+        		node.setcheckpoints[n]=true;
+			});
+			node.setrollbacks={};
+        	$('#node-input-nodes-tbody tr td:nth-child(3) input').filter(':checked').map(function () {
+        		r=$(this).parents("tr");
+        		n=r.find("td:eq(4)").text();
+        		node.setrollbacks[n]=true;
+			});
+			
+        },
+        oneditresize: function(size) {
+        }
+    });
+</script>

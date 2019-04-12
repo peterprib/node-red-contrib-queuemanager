@@ -1,0 +1,44 @@
+<script type="text/x-red" data-help-name="Queue Checkpoint">
+    <p>Define checkpoint for queue managed message which reduces active account and releases next message </p>
+    <p>Runs commit stack that may set on message by preceeding nodes.
+    <p>Can be set to roll back mode which instigates roll back functions that nodes may have placed on roll back stack. 
+    </p>
+</script>
+
+<script type="text/x-red" data-template-name="Queue Checkpoint">
+
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('Queue Checkpoint',{
+    	category: 'function',
+        defaults: {
+            name: {value:"",required:false},
+            queueManager: {required:true}
+        },
+	    inputs:1,
+        inputLabels: "",
+        outputs:1,
+        outputLabels: ["Committed"],
+        icon: "icons8-tollbooth-48.png",
+        label: function() {
+            return this.name||this._("Queue Checkpoint");
+        },
+        labelStyle: function() {
+            return "node_label_italic";
+        },
+        oneditprepare: function() {
+        },
+        oneditsave: function() {
+        	var QMs = RED.nodes.filterNodes({type:"Queue Manager"});
+			this.queueManager = QMs.length===1?QMs[0]:undefined;
+        },
+        oneditresize: function(size) {
+        }
+    });
+</script>
