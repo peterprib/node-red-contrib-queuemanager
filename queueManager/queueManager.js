@@ -54,6 +54,8 @@ function inputWrapper(msg) {
 		return;
 	}
 	if(!msg.hasOwnProperty("rollbackStack")) {
+		msg.commitStack=[];
+		msg.commit=commit;
 		msg.rollbackStack=[];
 		msg.rollback=rollback;
 	}
@@ -153,8 +155,11 @@ function SetEndActive(msg) {
 function rollback(msg) {
 	msg.attempts=msg.attempts++||0;
 	if(msg.rollbackStack) {
-		for(var r of msg.rollbackStack) {
+		var r;
+		while (msg.rollbackStack.length) {
+			r=msg.rollbackStack.pop();
 			try{
+				var node=r.node;
 				r.action.apply(r.node,[msg]);
 			} catch(e) {
 				try{
@@ -174,8 +179,25 @@ function rollback(msg) {
 }
 function commit(msg) {
 	if(msg.commitStack) {
-		for(var r in msg.rollbackStack) {
-			r.action.apply(r.node,[msg]);
+		var r;
+		while (msg.commitStack.length) {
+			r=msg.commitStack.pop();
+			try{
+				var node=r.node;
+				r.action.apply(r.node,[msg]);
+			} catch(e) {
+				try{
+					r.node.error("commit failed for node: "+r.node.id+" reason: "+e,msg);
+				} catch(e) {
+					console.error("commit failed as commitStack has bad entry for node reason: "+e+" stack entry properties:" +r);
+					if(r instanceof Object) {
+						console.error("   stack entry properties:" +Object.keys(r));
+						if(r.node) {
+							console.error("   node properties:" +Object.keys(r.node));
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -290,7 +312,7 @@ module.exports = function(RED) {
         		rollbackCnt+=q.rollbackCnt||0;
         		timeOutCnt+=q.timeOutCnt||0;
         	}
-        	node.status({ fill: (node.maxActive>0?'green':'yellow'), shape: 'ring', text: (node.maxActive>0?'':'Paused ')+ "Active: "+activeCnt+" Waiting: "+waitingCnt+"<br/> Rollback: "+(rollbackCnt)+" Timed out: "+timeOutCnt });
+        	node.status({ fill: (node.maxActive>0?'green':'yellow'), shape: 'ring', text: (node.maxActive>0?'':'Paused ')+ "Active: "+activeCnt+" Waiting: "+waitingCnt+" Rollback: "+(rollbackCnt)+" Timed out: "+timeOutCnt });
         }
         node.check = setInterval(checkLoop, node.checkInterval);
     }
