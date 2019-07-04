@@ -72,11 +72,20 @@ Run the following command in the root directory of your Node-RED install
     
 # Test
 
-
 Test/example flow in test/testflow.json which requires [loadbalance][4] 
 
 ![Test](documentation//test.JPG "Test flow")
 
+
+------------------------------------------------------------
+
+# Version
+
+0.0.1 Base
+
+0.0.2 Fix time issue with queue manager being rec0.0.1ognised and control on overflow message flooding
+
+------------------------------------------------------------
 
 # Author
 

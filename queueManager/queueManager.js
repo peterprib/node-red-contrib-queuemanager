@@ -1,3 +1,7 @@
+const ts=(new Date().toString()).split(' ');
+console.log([parseInt(ts[2],10) ,ts[1],ts[4]].join(' ')+" - [info] queueManager Copyright 2019 Jaroslav Peter Prib");
+		
+const overflowMsgStop=10;
 function isQmNode(t) {
 	return ["Queue Manager","Queue","Queue Checkpoint","Queue Rollback"].includes(t);
 }
@@ -72,7 +76,13 @@ function inputWrapper(msg) {
 		return;
 	}
 	if(q.waiting.length>q.maxWaiting) {
-		throw Error("Too many messages queued. Could be DoS attack, noded latency bad, or logic bug");
+		if(++q.overflowCnt>=overflowMsgStop){
+			if(q.overflowCnt>overflowMsgStop) {
+				return;
+			}
+			throw Error("Too many messages queued. Could be DoS attack, noded latency bad, or logic bug temporary disable this message");
+		}
+		throw Error("Too many messages queued.");
 	}
 	q.waiting.push(msg);
 }
@@ -90,6 +100,7 @@ function addQueueWrapper (n,o) {
 			waiting:[],
 			active:{},
 			activeCnt:0,
+			overflowCnt:0,
 			inCnt:0,
 			outCnt:0,
 			rollbackCnt:0,
@@ -293,6 +304,7 @@ module.exports = function(RED) {
         	var activeCnt=0,waitingCnt=0,rollbackCnt=0,timeOutCnt=0,q,pit=Date.now(),msg,m,p;
         	for (p in node.queues) {
         		q=node.queues[p];
+        		q.overflowCnt=0;
         		for(m in q.active) {	//check active messages and kill those over a limit
         			msg=q.active[m];
         			if(pit-msg.qm.activeStartTime >msg.qm.q.maxTime) {

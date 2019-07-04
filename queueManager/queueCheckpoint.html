@@ -11,7 +11,15 @@
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
-
+    <div class="form-row form-row-http-in-qmError show">
+        <label><i class="fa fa-exclamation-circle"></i> <font color="red"> Error</font></label>
+        <font color="red">Queue Manager Node Not Defined</font>
+    </div>
+    <div class="form-row form-row-http-in-qmErrorMany show">
+        <label><i class="fa fa-exclamation-circle"></i> <font color="red"> Error</font></label>
+        <font color="red">Too many Queue Managers Defined</font>
+    </div>
+    
 </script>
 
 <script type="text/javascript">
@@ -33,10 +41,17 @@
             return "node_label_italic";
         },
         oneditprepare: function() {
+        	var QMs = RED.nodes.filterNodes({type:"Queue Manager"});
+        	this.queueManager = QMs.length==1?QMs[0]:undefined;
+			$(".form-row-http-in-qmError").hide();
+			$(".form-row-http-in-qmErrorMany").hide();
+	       	if (QMs.length==0) {
+				$(".form-row-http-in-qmError").show();
+			} else if (QMs.length>1) {
+				$(".form-row-http-in-qmErrorMany").show();
+			} 
         },
         oneditsave: function() {
-        	var QMs = RED.nodes.filterNodes({type:"Queue Manager"});
-			this.queueManager = QMs.length===1?QMs[0]:undefined;
         },
         oneditresize: function(size) {
         }
