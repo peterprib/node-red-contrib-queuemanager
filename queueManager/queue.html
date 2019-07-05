@@ -70,6 +70,64 @@
         oneditsave: function() {
         },
         oneditresize: function(size) {
+        },
+        button: {
+            enabled: function() {
+                return !this.changed;
+            },
+            onclick: function() {
+                if (this.changed) {
+                    return RED.notify(RED._("Queue undeployed changes"),"warning");
+                }
+                var label = this._def.label.call(this);
+                if (label.length > 30) {
+                    label = label.substring(0,50)+"...";
+                }
+                label = label.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                var node = this;
+                
+                function sendCommand (action) {
+                	$.get( "/queue/"+node.id+"/"+action )
+			        .done(function( json ) {
+            			    	RED.notify(node._("Queue signal success",{label:label}),{type:"success",id:"Load Injector"});
+                			}).fail(function( jqXHR, textStatus, error ) {
+                   				if (jqXHR.status === 404) {
+     			                	RED.notify(node._("Queue signal not deployed"),"error");
+                				} else if (jqXHR.status === 500) {
+   				                	RED.notify(node._("Queue signal inject failed with error "+textStatus||""),"error");
+                				} else if (jqXHR.status === 0) {
+ 									RED.notify(node._("Queue signal no response"),"error");
+                   				} else {
+									RED.notify(node._("Queue signal unexpected status:"+jqXHR.status+" message:"+textStatus),"error");
+								}
+							});
+	
+                }
+                
+                
+                $('<div></div>').appendTo('body').html('<div><h6>Confirm Empty Queue?</h6></div>')
+  				.dialog({
+      				modal: true, title: (node.name||'Queue'), zIndex: 10000, autoOpen: true,
+   					width: 'auto', resizable: false,
+					buttons: {
+						Rollback: function () {
+							sendCommand("empty");
+						    $(this).dialog("close");
+						},
+						Purge: function () {
+							sendCommand("purge");
+						    $(this).dialog("close");
+						},
+						No: function () {
+						     $(this).dialog("close");
+						}
+					},
+					close: function (event, ui) {
+				    	$(this).remove();
+					}
+				});
+            }
         }
+        
     });
 </script>

@@ -155,6 +155,25 @@ function addRollbackWrapper (n) {
 		n.orginalsend.apply(n,[msg]);
 	};
 }
+function emptyQueue(q) {
+	let i=0,msg
+	while(q.waiting.length>0) {
+		msg=q.waiting.pop();
+		i++
+		q.rollbackCnt++;
+		rollback(msg);
+		q.node.orginalsend.apply(q.node,[msg]);
+	}
+	return i;
+}
+function purgeQueue(q) {
+	let i=0,msg
+	while(q.waiting.length>0) {
+		msg=q.waiting.pop();
+		i++
+	}
+	return i;
+}
 function SetEndActive(msg) {
 	if(msg.qm.q.waiting.length>0) {
 		activateMessage.apply(msg.qm.q.node,[msg.qm.q.waiting.pop()]);
@@ -219,6 +238,7 @@ function qmList(RED) {
 		n=RED.nodes.getNode(p);
 		queues[p]={
 			id:p,
+			node:n,
 			name:(n.name||"*** node not found"),
 			maxTime:q.maxTime,
 			maxActive:q.maxActive,
@@ -245,6 +265,8 @@ module.exports = function(RED) {
         node.checkChanges=checkChanges;
         node.qmList=qmList;
         node.rollback=rollback;
+        node.emptyQueue=emptyQueue;
+        node.purgeQueue=purgeQueue;
 
         RED.events.on("nodes-started",function() {
             node.log("All nodes have started now adding wrappers");
@@ -318,6 +340,9 @@ module.exports = function(RED) {
         		}
         		while (q.waiting.length && q.activeCnt<q.maxActive && node.active < node.maxActive) { // activate waiting messages if possible
                 		activateMessage.apply(q.node,[q.waiting.pop()]);
+        		}
+        		if(q.node.showStatus) {
+        			q.node.status({ fill: (q.maxActive>0?'green':'yellow'), shape: 'ring', text: (q.maxActive>0?'':'Paused ')+ "Active: "+q.activeCnt+" Waiting: "+q.waiting.length+" Rollback: "+(q.rollbackCnt||0)+" Timed out: "+(q.timeOutCnt||0) });
         		}
         		activeCnt+=q.activeCnt;
         		waitingCnt+=q.waiting.length;
