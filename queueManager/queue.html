@@ -86,7 +86,8 @@
                 label = label.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
                 var node = this;
                 
-                function sendCommand (action) {
+                function sendCommand(element,action) {
+                	$(element).dialog("close");
                 	$.get( "/queue/"+node.id+"/"+action )
 			        .done(function( json ) {
             			    	RED.notify(node._("Queue signal success",{label:label}),{type:"success",id:"Load Injector"});
@@ -101,25 +102,29 @@
 									RED.notify(node._("Queue signal unexpected status:"+jqXHR.status+" message:"+textStatus),"error");
 								}
 							});
-	
                 }
-                
-                
-                $('<div></div>').appendTo('body').html('<div><h6>Confirm Empty Queue?</h6></div>')
+                $('<div></div>').appendTo('body').html('<div>Choose Action</div>')
   				.dialog({
       				modal: true, title: (node.name||'Queue'), zIndex: 10000, autoOpen: true,
    					width: 'auto', resizable: false,
 					buttons: {
+						Hold: function () {
+							sendCommand(this,"hold");
+						},
+						Release: function () {
+							sendCommand(this,"release");
+						},
+						"Release 1": function () {
+							sendCommand(this,"release1");
+						},
 						Rollback: function () {
-							sendCommand("empty");
-						    $(this).dialog("close");
+							sendCommand(this,"empty");
 						},
 						Purge: function () {
-							sendCommand("purge");
-						    $(this).dialog("close");
+							sendCommand(this,"purge");
 						},
-						No: function () {
-						     $(this).dialog("close");
+						Close: function () {
+							$(this).dialog("close");
 						}
 					},
 					close: function (event, ui) {

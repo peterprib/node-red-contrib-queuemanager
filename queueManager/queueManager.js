@@ -174,6 +174,14 @@ function purgeQueue(q) {
 	}
 	return i;
 }
+function setMaxActive(q,n) {
+	q.maxActive=n;
+}
+function release1(q) {
+	if(q.waiting.length>0) {
+		activateMessage.apply(q.node,[q.waiting.pop()]);
+	}
+}
 function SetEndActive(msg) {
 	if(msg.qm.q.waiting.length>0) {
 		activateMessage.apply(msg.qm.q.node,[msg.qm.q.waiting.pop()]);
@@ -267,6 +275,8 @@ module.exports = function(RED) {
         node.rollback=rollback;
         node.emptyQueue=emptyQueue;
         node.purgeQueue=purgeQueue;
+        node.setMaxActive=setMaxActive;
+        node.release1=release1;
 
         RED.events.on("nodes-started",function() {
             node.log("All nodes have started now adding wrappers");

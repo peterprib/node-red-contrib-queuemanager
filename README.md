@@ -81,6 +81,8 @@ Test/example flow in test/testflow.json which requires [loadbalance][4]
 
 # Version
 
+0.0.4 Add ability to hold/release queue and release a single message
+
 0.0.3 Add queue status to queue node and empty queue function
 
 0.0.2 Fix time issue with queue manager being rec0.0.1ognised and control on overflow message flooding

@@ -37,18 +37,27 @@ module.exports = function(RED) {
     	    		case 'purge':
     	       	    	qm.purgeQueue(node.qm.q);
     	       	     	break;
+    	    		case 'hold':
+    	       	    	qm.setMaxActive(node.qm.q,0);
+    	       	     	break;
+    	    		case 'release':
+    	       	    	qm.setMaxActive(node.qm.q,node.maxActive);
+    	       	     	break;
+    	    		case 'release1':
+    	       	    	qm.release1(node.qm.q);
+    	       	     	break;
     	       	     default:
     	       	    	 throw Error("unknown action: "+req.params.action);
     	    	}
-    	    	node.warn("Request to empty queue");
+    	    	node.warn("Request to "+req.params.action);
     	        res.sendStatus(200);
     	    } catch(err) {
-    	    	var reason1='Internal Server Error, queue empty failed '+err.toString();
+    	    	var reason1='Internal Server Error, '+req.params.action+' failed '+err.toString();
     	        node.error(reason1);
     	        res.status(500).send(reason1);
     	    }
     	} else {
-    		var reason2="request to empty queue failed for id:" +req.params.id;
+    		var reason2="request to "+req.params.action+" failed for id:" +req.params.id;
 //    		node.error(reason2);
     		res.status(404).send(reason2);
     	}
