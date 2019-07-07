@@ -189,8 +189,9 @@ function SetEndActive(msg) {
 	msg.qm.active--;
 }
 function rollback(msg) {
-	msg.attempts=msg.attempts++||0;
+	msg.attempts=msg.attempts++||0
 	if(msg.rollbackStack) {
+		msg.commitStack=[];
 		var r;
 		while (msg.rollbackStack.length) {
 			r=msg.rollbackStack.pop();
@@ -235,6 +236,7 @@ function commit(msg) {
 				}
 			}
 		}
+		msg.rollbackStack=[];
 	}
 }
 function qmList(RED) {
