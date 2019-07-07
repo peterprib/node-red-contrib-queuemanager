@@ -128,7 +128,6 @@ function addCheckpointWrapper (n) {
 		commit(msg);
 		SetEndActive(msg);
 		msg.qm.q.outCnt++;
-    	delete msg.qm.q.active[msg._msgid];
     	delete msg.qm;
     	n.orginalsend.apply(n,arguments); //saved send
 	};
@@ -183,12 +182,11 @@ function release1(q) {
 	}
 }
 function SetEndActive(msg) {
-	if(msg.qm.q.waiting.length>0) {
+	delete msg.qm.q.active[msg._msgid];
+	if( --msg.qm.q.activeCnt<msg.qm.q.maxActive && msg.qm.q.waiting.length>0) {
 		activateMessage.apply(msg.qm.q.node,[msg.qm.q.waiting.pop()]);
 	}
 	msg.qm.active--;
-	msg.qm.q.activeCnt--;
-	delete msg.qm.q.active[msg._msgid];
 }
 function rollback(msg) {
 	msg.attempts=msg.attempts++||0;
