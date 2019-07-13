@@ -43,12 +43,13 @@ function checkChanges(RED,current,revised,add,remove,change) {
 }
 
 function activateMessage(msg) {
-	++msg.qm.q.activeCnt;
+	let q=msg.qm.q;
+	++q.activeCnt;
 	msg.qm.activeStartTime=Date.now();
-	msg.qm.q.active[msg._msgid]=msg;
+	q.active[msg._msgid]=msg;
 	this.active++;
 	try{
-		msg.qm.q.inputListener.apply(msg.qm.q.node,[msg]);        	
+		q.inputListener.apply(q.node,[msg]);        	
 	} catch(e) {
 		this.error("activateMessage failed: "+e);
 	}
@@ -182,14 +183,19 @@ function release1(q) {
 	}
 }
 function SetEndActive(msg) {
-	delete msg.qm.q.active[msg._msgid];
-	if( --msg.qm.q.activeCnt<msg.qm.q.maxActive && msg.qm.q.waiting.length>0) {
-		activateMessage.apply(msg.qm.q.node,[msg.qm.q.waiting.pop()]);
+	var q=msg.qm.q;
+	delete q.active[msg._msgid];
+	if(q.activeCnt<1) {
+		q.node.warn("SetEndActived active msg ended even though actve is zero");
+		return;
+	}
+	if( --q.activeCnt<q.maxActive && q.waiting.length>0) {
+		activateMessage.apply(q.node,[q.waiting.pop()]);
 	}
 	msg.qm.active--;
 }
 function rollback(msg) {
-	msg.attempts=msg.attempts++||0
+	msg.attempts=(msg.attempts||0)+1;
 	if(msg.rollbackStack) {
 		msg.commitStack=[];
 		var r;
@@ -289,8 +295,7 @@ module.exports = function(RED) {
                 node.log("Rollback wrappers processed");
             } catch(e) {
             	node.error("error in adding wrappers: "+e)
-            }
-        	
+            }   	
         })
         
         RED.httpAdmin.get('/queuemanager/list',function(req,res) {
@@ -341,11 +346,12 @@ module.exports = function(RED) {
         			msg=q.active[m];
         			if(pit-msg.qm.activeStartTime >msg.qm.q.maxTime) {
         				node.error("timeout message ", msg); //  killed message
+        				++q.timeOutCnt;
         				rollback(msg);
-        				msg.qm.q.timeOutCnt++;
-        				msg.qm.q.activeCnt--;
-       					delete q.active[m];
-       					delete msg.qm;
+        				SetEndActive(msg);
+        				++q.outCnt;
+        		    	delete msg.qm;
+        		    	delete msg;
         			}
         		}
         		while (q.waiting.length && q.activeCnt<q.maxActive && node.active < node.maxActive) { // activate waiting messages if possible
