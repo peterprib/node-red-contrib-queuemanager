@@ -22,6 +22,7 @@
     "nodes": {
       "queue": "queueManager/queue.js",
       "queueManager": "queueManager/queueManager.js",
+      "queueManagerAdmin": "queueManager/queueManagerAdmin.js",
       "queueCheckpoint": "queueManager/queueCheckpoint.js",
       "queueRollback": "queueManager/queueRollback.js"
     }

@@ -18,30 +18,35 @@
 <script type="text/x-red" data-template-name="Queue Manager">
 
     <div class="form-row">
-        <label for="node-input-checkInterval"><i class="icon-bookmark"></i> Check Interval (millisecs)</label>
-        <input type="number" id="node-input-checkInterval">
+        <label for="node-config-input-name"><i class="icon-bookmark"></i> Name</label>
+        <input type="text" id="node-config-input-name">
+    </div>
+    
+    <div class="form-row">
+        <label for="node-config-input-checkInterval"><i class="icon-bookmark"></i> Check Interval (millisecs)</label>
+        <input type="number" id="node-config-input-checkInterval">
     </div>
 
     <div class="form-row">
-        <label for="node-input-maxTime"><i class="icon-bookmark"></i> Max Time (millisecs)</label>
-        <input type="number" id="node-input-maxTime">
+        <label for="node-config-input-maxTime"><i class="icon-bookmark"></i> Max Time (millisecs)</label>
+        <input type="number" id="node-config-input-maxTime">
     </div>
 
     <div class="form-row">
-        <label for="node-input-maxWaiting"><i class="icon-bookmark"></i> Max Waiting</label>
-        <input type="number" id="node-input-maxWaiting">
+        <label for="node-config-input-maxWaiting"><i class="icon-bookmark"></i> Max Waiting</label>
+        <input type="number" id="node-config-input-maxWaiting">
     </div>
 
     <div class="form-row">
-        <label for="node-input-maxActive"><i class="icon-bookmark"></i> Max Active</label>
-        <input type="number" id="node-input-maxActive">
+        <label for="node-config-input-maxActive"><i class="icon-bookmark"></i> Max Active</label>
+        <input type="number" id="node-config-input-maxActive">
     </div>
 
-    <div class="form-row node-input-nodes-container-row" style="margin-bottom:0px; width:100%; min-width:520px">
+    <div class="form-row node-config-input-nodes-container-row" style="margin-bottom:0px; width:100%; min-width:520px">
         <label style="vertical-align:top;"><i class="fa fa-list-alt"></i> Nodes </label>
           <div style="width:100%; display: inline-block; background-color:#f3f3f3; border-top:0px solid; border-radius:0 0 0 0; border-bottom:1px solid #ccc;">
 	            <table>
- 	              	<tbody id="node-input-nodes-tbody" stype="display: block;  overflow: auto; max-width:400px; max-height: 400px;">
+ 	              	<tbody id="node-config-input-nodes-tbody" stype="display: block;  overflow: auto; max-width:400px; max-height: 400px;">
                 		<tr style="padding-left:4px; border-bottom: 1px solid black; background: lightblue; position: sticky; top: 0;">
                 			<td>Queue</td>
                 			<td>Check Point</td>
@@ -57,12 +62,14 @@
                 </table>
         </div>
     </div>
+    
 </script>
 
 <script type="text/javascript">
     RED.nodes.registerType('Queue Manager',{
-    	category: 'function',
+    	category: 'config',
         defaults: {
+        	name: {required:true},
             checkInterval: {value:1000,required:true,validate:RED.validators.number()}, // 1 sceond
             maxActive: {value:100,required:true,validate:RED.validators.number()},
             maxWaiting: {value:1000,required:true,validate:RED.validators.number()},
@@ -71,29 +78,24 @@
             setcheckpoints:{value:{}},
             setrollbacks:{value:{}},
         },
-	    inputs:1,
-        inputLabels: "",
-        outputs:1,
-        outputLabels: ["Response"],
-        icon: "icons8-networking-manager-64.png",
         label: function() {
-            return this._("Queue Manager");
-        },
-        labelStyle: function() {
-            return "node_label_italic";
+            return this.name||"QueueManager";
         },
         oneditprepare: function() {
-        	var qm,node=this,
-               	nodes=$("#node-input-nodes-tbody");
-	        var nodesAll = RED.nodes.filterNodes({});
+        	let qm,node=this,
+               	nodes=$("#node-config-input-nodes-tbody"),
+	        	nodesAll = RED.nodes.filterNodes({});
 			$.getJSON("queuemanager/list",function(data) {
   		        qm=data;
             	for (let n of nodesAll) {
             		if(n.id==node.id) continue;
-            		if(["debug"].includes(n.type)) continue;
+            		if(["debug","Queue Manager Admin"].includes(n.type)) continue;
+            		if(n.queueManager && n.queueManager.id !== node.id) {
+            			continue;
+            		}
             		generateNode(n,qm);
             	}
-             	$('#node-input-nodes-tbody tr td:first-child input').change(function () {
+             	$('#node-config-input-nodes-tbody tr td:first-child input').change(function () {
             		if($(this).is(':checked')){
             			$(this).parents("tr").find("input:gt(2)").show();
             		} else {
@@ -106,7 +108,7 @@
             	var nc=(qm.checkpoints||{})[n.id]; 
             	var nr=(qm.rollbacks||{})[n.id]; 
             	var nr=n.type=="Queue Rollback"; 
-            	var readonly=["Queue","Queue Checkpoint","Queue Rollback"].includes(n.type);
+            	var readonly=["Queue","Queue Checkpoint","Queue Rollback","Queue Manager","Queue Manager"].includes(n.type);
             	var row=$('<tr/>').appendTo(nodes);
 				$('<td/>').append($('<input />', { 
 						type: 'checkbox',
@@ -133,9 +135,9 @@
 	         }
         },
         oneditsave: function() {
-        	var r,n,inputs,node=this;
+        	let r,n,inputs,node=this;
         	node.setqueues={};
-        	$('#node-input-nodes-tbody tr td:first-child input').filter(':checked').map(function () {
+        	$('#node-config-input-nodes-tbody tr td:first-child input').filter(':checked').map(function () {
         		r=$(this).parents("tr");
         		n=r.find("td:eq(4)").text();
             	inputs=r.find("input:gt(2)");
@@ -146,13 +148,13 @@
                 };
 			});
 			node.setcheckpoints={};
-        	$('#node-input-nodes-tbody tr td:nth-child(2) input').filter(':checked').map(function () {
+        	$('#node-config-input-nodes-tbody tr td:nth-child(2) input').filter(':checked').map(function () {
         		r=$(this).parents("tr");
         		n=r.find("td:eq(4)").text();
         		node.setcheckpoints[n]=true;
 			});
 			node.setrollbacks={};
-        	$('#node-input-nodes-tbody tr td:nth-child(3) input').filter(':checked').map(function () {
+        	$('#node-config-input-nodes-tbody tr td:nth-child(3) input').filter(':checked').map(function () {
         		r=$(this).parents("tr");
         		n=r.find("td:eq(4)").text();
         		node.setrollbacks[n]=true;

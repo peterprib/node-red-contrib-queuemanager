@@ -1,38 +1,45 @@
-<script type="text/x-red" data-help-name="Queue Checkpoint">
-    <p>Define checkpoint for queue managed message which reduces active account and releases next message </p>
-    <p>Runs commit stack that may set on message by preceeding nodes.
-    <p>Can be set to roll back mode which instigates roll back functions that nodes may have placed on roll back stack. 
+<script type="text/x-red" data-help-name="Queue Manager Admin">
+    <p>Queue manager adminstration</p>
+    <p> 
+    Topic of message defines action on incoming payload
+    <dl>
+    <dt>list</dt>
+    <dd>JSON payload of metrics for all queues</dd>
+    <dt>pause</dt>
+    <dd>Queue all incoming messages</dd>
+    <dt>release</dt>
+    <dd>Activate queue processing</dd>
+    <dt>set</dt>
+    <dd>Change controlling parameters for queue manager</dd>
+    </dl>
     </p>
 </script>
 
-<script type="text/x-red" data-template-name="Queue Checkpoint">
-
-    <div class="form-row">
+<script type="text/x-red" data-template-name="Queue Manager Admin">
+     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
-    
 	<div class="form-row">
     	<label for="node-input-queueManager"><i class="fa fa-server"></i> Queue Manager</label>
     	<input type="text" id="node-input-queueManager">
   	</div>
- 
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('Queue Checkpoint',{
+    RED.nodes.registerType('Queue Manager Admin',{
     	category: 'function',
         defaults: {
-            name: {value:"",required:false},
+        	name: {value:"Queue Manager Admin",required:false},
             queueManager: {type:"Queue Manager",required:true}
         },
 	    inputs:1,
         inputLabels: "",
         outputs:1,
-        outputLabels: ["Committed"],
-        icon: "icons8-tollbooth-48.png",
+        outputLabels: ["Response"],
+        icon: "icons8-networking-manager-64.png",
         label: function() {
-            return this.name||this._("Queue Checkpoint");
+            return this._("Queue Manager Admin");
         },
         labelStyle: function() {
             return "node_label_italic";
