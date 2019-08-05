@@ -65,21 +65,18 @@ function activateMessage(msg) {
 		this.error("activateMessage failed: "+e);
 	}
 }
-function StackProcessor(p,callback,callbackArgs,maxRetry) {
+function StackProcessor(p,n,callback,callbackRetry,callbackArgs,maxRetry) {
 	this.stack=[];
 	this.parent=p;
 	this.groupId=0;
-	if(callback) {
-		this.startPoint(p,callback,callbackArgs,maxRetry);
+	if(callback||callbackRetry) {
+		this.startPoint(n,callback,callbackRetry,callbackArgs,maxRetry);
 	}
 	return this;
 }
-//StackProcessor.prototype.setRetry=function(maxRetry,node,rollback,rollbackArgs,maxRetry) {
-//	this.add({node:node,retry:maxRetry,rollback:rollback,rollbackArgs:rollbackArgs});
-//};
-StackProcessor.prototype.startPoint=function(n,callback,callbackArgs,retryMax) {
+StackProcessor.prototype.startPoint=function(n,callback,callbackRetry,callbackArgs,retryMax) {
 	++this.groupId;
-	this.add({node:n,callback:callback,callbackArgs:callbackArgs,retryMax:retryMax||0});
+	this.add({node:n,callback:callback,callbackRetry:callbackRetry,callbackArgs:callbackArgs,retryMax:retryMax||0});
 	return this;
 };
 StackProcessor.prototype.add=function(p) {
@@ -99,13 +96,15 @@ StackProcessor.prototype.log=function(text) {
 	console.log(text);
 };
 StackProcessor.prototype.process=function(action,callbackNode,callback,callbackArgs) {
-	if(debug) console.log("Stackprocessor process "+action);
+	if(debug) console.log("Stackprocessor process "+action+" stack size "+this.stack.length);
 	if(this.action && action !== this.action) {
 		this.error(action+" issued whilst active "+this.action+" enforcing rollback");
 		this.action="rollback";
+		this.notOK=true;
 	} else {
 		if(debug) console.log("Stackprocessor process "+action+" node:"+nodeLabel(callbackNode));
 		this.action=action;
+		this.notOK=(this.action=="rollback");
 		this.callbackNode=callbackNode;
 		this.callback=callback;
 		this.callbackArgs=callbackArgs;
@@ -114,20 +113,30 @@ StackProcessor.prototype.process=function(action,callbackNode,callback,callbackA
 }
 StackProcessor.prototype.returnCallback=function() {
 	if(debug) console.log("Stackprocessor return orginal process call "+this.action);
-	this.callback.apply(this.callbackNode,this.callbackArgs);
+	if(this.callback) {  // if rollback no callback  - may be in future if want another path
+		this.callback.apply(this.callbackNode,this.callbackArgs);
+	}
 }
 StackProcessor.prototype.next=function() {
 	if(debug) console.log("Stackprocessor next "+this.action);
 	let r;
 	while (this.stack.length) {  // find next stat process that has action
 		r=this.stack.pop();
-		if(r.retryMax--) { // must be retry point
-			if(debug) console.log("Stackprocessor next retry");
-			r.retry=(r.retry||0)+1;
-			this.stack.push(r);
-			this.log("Retry attempt "+r.retry+" of "+(r.retryMax+r.retry));
-			r.callback.apply(r.node,callbackArgs);
-			return;
+		if(debug) console.log("Stackprocessor next retry, count: "+r.retryMax+" Not OK: "+this.notOK);
+		if(r.retryMax && this.notOK) { 
+			if(r.retryMax-->0) { // must be retry point
+				if(debug) console.log("Stackprocessor next retry");
+				r.retry=(r.retry||0)+1;
+				this.stack.push(r);
+				this.log("Retry attempt "+r.retry+" of "+(r.retryMax+r.retry));
+				r.callbackRetry.apply(r.node,r.callbackArgs);
+				return;
+			} else {
+				if(debug) console.log("Stackprocessor next no more retries continue down stack");
+				this.next(); // onwards with rollback
+				r.callback.apply(r.node,[this]);
+				return;
+			}
 		}
 		if(r.hasOwnProperty(this.action)) break;
 		if(r.hasOwnProperty("callback")) {
@@ -139,10 +148,7 @@ StackProcessor.prototype.next=function() {
 	}
 	if(this.stack.length==0) {
 		if(debug) console.log("Stackprocessor next empty stack "+this.action);
-		if(this.callback) {
-			if(debug) console.log("Stackprocessor next empty stack callback");
-			this.returnCallback();
-		}
+		this.returnCallback();
 		return;
 	}
 	try{
@@ -176,18 +182,27 @@ function inputWrapper(msg) {
 		return;
 	}
 	var q=this.qm.q;
-	msg.stackProcessor=new StackProcessor(msg,function(processStack) {
+	msg.stackProcessor=new StackProcessor(msg,this,
+		function(processStack) {
 			if(debug) console.log("queue Manager input wrapper initial group "+processStack.parent._msgid);
-			SetEndActive(this);
+			SetEndActive(processStack.parent);
 			processStack.next();
 		},
-		function(msg) {
+		function(msg) {  //retry call
 			if(debug) console.log("queue Manager input wrapper set retry try again");
 			msg.startTime=Date.now();
-			this.orginalSend.apply(this,arguments);
+			msg.stackProcessor.add({
+				node:this,
+				rollback:function(processStack) {
+					this.error(" QM rollback from retry,  message: "+processStack.parent._msgid);
+					processStack.next();
+				}
+			});
+			this.send.apply(this,msg);
 		},
 		[msg],
-		q.maxRetries);
+		q.maxRetries
+	);
 	msg.stackProcessor.add({
 		node:this,
 		rollback:function(processStack) {
@@ -201,16 +216,6 @@ function inputWrapper(msg) {
 		node:this,
 		qmNode:this.qm
 	};
-/*
-	if(q.maxRetries>0) {
-		msg.stackProcessor.setRetry(q.maxRetries,this,function(msg) {
-			if(debug) console.log("queue Manager input wrapper set retry try again");
-			msg.startTime=Date.now();
-			this.orginalSend.apply(this,arguments);
-		}
-		,[msg]);
-	}
-*/
 	q.inCnt++;
 	if(q.activeCnt<q.maxActive && this.active < this.maxActive) {
 		activateMessage.apply(this,[msg]);
@@ -373,7 +378,7 @@ function release1(q) {
 function SetEndActive(msg) {
 	var q=msg.qm.q;
 	q.outCnt++;
-	if(debug) console.log("queue Manager SetEndActive "+q.activeCnt);
+	if(debug) console.log("queue Manager SetEndActive "+q.activeCnt+" message: "+msg._msgId);
 	delete q.active[msg._msgid];
 	if(--q.activeCnt<0) {
 		++q.activeCnt;
@@ -479,7 +484,7 @@ module.exports = function(RED) {
         			if((pit - msg.qm.activeStartTime) > msg.qm.q.maxTime) {
         				node.error("timeout message "+m+" as ran for "+(pit-msg.qm.activeStartTime)+" millsecs", msg); //  killed message
         				++q.timeOutCnt;
-        				msg.stackProcessor.rollback(msg)
+        				msg.stackProcessor.rollback(msg);
         			}
     			}
         		while (q.waiting.length && q.activeCnt<q.maxActive && node.active < node.maxActive) { // activate waiting messages if possible
