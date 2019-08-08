@@ -6,7 +6,6 @@ module.exports = function(RED) {
         var node=Object.assign(this,n,{showStatus:true});
 		node.status({ fill: "red", shape: "dot", text: "Not initialised by queue manager"});
         node.on('input', function (msg) {
-        	console.log("QueueCheckpointNode "+Object.getOwnPropertyNames(msg).toString());
 			node.send(msg);
         });
     }

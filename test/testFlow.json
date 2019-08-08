@@ -1,1 +1,335 @@
-[{"id":"87d0c3d2.51ad3","type":"tab","label":"qm  test","disabled":false,"info":""},{"id":"d88dad9a.40eae","type":"delay","z":"87d0c3d2.51ad3","name":"","pauseType":"delay","timeout":"12","timeoutUnits":"seconds","rate":"1","nbRateUnits":"1","rateUnits":"second","randomFirst":"1","randomLast":"5","randomUnits":"seconds","drop":true,"x":680,"y":120,"wires":[["4819cc3e.392de4"]]},{"id":"8ad39d80.94c7a","type":"Queue Manager","z":"87d0c3d2.51ad3","checkInterval":1000,"maxActive":100,"maxWaiting":1000,"maxTime":"60000","setqueues":{"c2dbb48a.042038":{"maxActive":"2","maxWaiting":"10","maxTime":"10000"},"d913551c.13f038":{"maxActive":"10","maxWaiting":"100","maxTime":"4400"},"bf228cf7.23a3f":{"maxActive":"10","maxWaiting":"100","maxTime":"4000"}},"setcheckpoints":{"d24aa0b3.5ed66":true},"setrollbacks":{"2ea9519e.32798e":true},"x":320,"y":60,"wires":[["7ef233e9.b179bc"]]},{"id":"b9dea6.ced58158","type":"inject","z":"87d0c3d2.51ad3","name":"","topic":"list","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"onceDelay":0.1,"x":110,"y":60,"wires":[["8ad39d80.94c7a"]]},{"id":"7ef233e9.b179bc","type":"debug","z":"87d0c3d2.51ad3","name":"","active":true,"tosidebar":true,"console":false,"tostatus":false,"complete":"true","targetType":"full","x":870,"y":60,"wires":[]},{"id":"8b19bbeb.19b978","type":"inject","z":"87d0c3d2.51ad3","name":"","topic":"","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"onceDelay":0.1,"x":100,"y":180,"wires":[["86822ce7.4d3a3"]]},{"id":"86822ce7.4d3a3","type":"Queue","z":"87d0c3d2.51ad3","name":"aq","maxActive":"2","maxWaiting":"10","maxTime":"10000","x":290,"y":120,"wires":[["a2ed5455.9a0e18"]]},{"id":"e720dbd5.8f7388","type":"inject","z":"87d0c3d2.51ad3","name":"release","topic":"release","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"onceDelay":0.1,"x":90,"y":100,"wires":[["8ad39d80.94c7a"]]},{"id":"53247e65.ba4ef","type":"inject","z":"87d0c3d2.51ad3","name":"pause","topic":"pause","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"onceDelay":0.1,"x":90,"y":140,"wires":[["8ad39d80.94c7a"]]},{"id":"9d22ea52.af08f8","type":"Queue Checkpoint","z":"87d0c3d2.51ad3","name":"","queueManager":{"x":320,"y":60,"z":"c6a412d4.8b571","type":"Queue Manager","changed":false,"_config":{"checkInterval":"1000","maxActive":"100","maxWaiting":"1000","maxTime":"\"60000\"","setqueues":"{\"c2dbb48a.042038\":{\"maxActive\":\"2\",\"maxWaiting\":\"10\",\"maxTime\":\"10000\"},\"d913551c.13f038\":{\"maxActive\":\"10\",\"maxWaiting\":\"100\",\"maxTime\":\"4400\"},\"bf228cf7.23a3f\":{\"maxActive\":\"10\",\"maxWaiting\":\"100\",\"maxTime\":\"4000\"}}","setcheckpoints":"{\"d24aa0b3.5ed66\":true}","setrollbacks":"{\"2ea9519e.32798e\":true}","x":320,"y":60},"id":"6062ba0b.1cf9a4","_def":{"category":"function","defaults":{"checkInterval":{"value":1000,"required":true},"maxActive":{"value":100,"required":true},"maxWaiting":{"value":1000,"required":true},"maxTime":{"value":60000,"required":true},"setqueues":{"value":{}},"setcheckpoints":{"value":{}},"setrollbacks":{"value":{}}},"inputs":1,"inputLabels":"","outputs":1,"outputLabels":["Response"],"icon":"icons8-networking-manager-64.png","type":"Queue Manager","set":{"id":"node-red-contrib-monetdb/queueManager","name":"queueManager","types":["Queue Manager"],"enabled":true,"local":false,"module":"node-red-contrib-monetdb","version":"0.0.1","added":true}},"inputs":1,"outputs":1,"checkInterval":1000,"maxActive":100,"maxWaiting":1000,"maxTime":"60000","setqueues":{"c2dbb48a.042038":{"maxActive":"2","maxWaiting":"10","maxTime":"10000"},"d913551c.13f038":{"maxActive":"10","maxWaiting":"100","maxTime":"4400"},"bf228cf7.23a3f":{"maxActive":"10","maxWaiting":"100","maxTime":"4000"}},"setcheckpoints":{"d24aa0b3.5ed66":true},"setrollbacks":{"2ea9519e.32798e":true},"ports":[0],"dirty":false,"valid":true,"status":{"text":"Active: 0 Waiting: 0 Rollback: 3 Timed out: 2","fill":"green","shape":"ring"},"w":160,"h":30,"_ports":[[{"__data__":0}]],"selected":false,"highlighted":false,"resize":false,"l":true},"x":670,"y":260,"wires":[["7ef233e9.b179bc"]]},{"id":"a9d606cf.f815a8","type":"Queue Rollback","z":"87d0c3d2.51ad3","name":"","queueManager":{"x":320,"y":60,"z":"c6a412d4.8b571","type":"Queue Manager","changed":false,"_config":{"checkInterval":"1000","maxActive":"100","maxWaiting":"1000","maxTime":"\"60000\"","x":320,"y":60},"id":"6062ba0b.1cf9a4","_def":{"category":"function","defaults":{"checkInterval":{"value":1000,"required":true},"maxActive":{"value":100,"required":true},"maxWaiting":{"value":1000,"required":true},"maxTime":{"value":60000,"required":true},"queues":{"value":{}},"checkpoints":{"value":{}}},"inputs":1,"inputLabels":"","outputs":1,"outputLabels":["Response"],"icon":"icons8-networking-manager-64.png","type":"Queue Manager","set":{"id":"node-red-contrib-monetdb/queueManager","name":"queueManager","types":["Queue Manager"],"enabled":true,"local":false,"module":"node-red-contrib-monetdb","version":"0.0.1","added":true}},"inputs":1,"outputs":1,"checkInterval":1000,"maxActive":100,"maxWaiting":1000,"maxTime":"60000","ports":[0],"dirty":false,"valid":true,"w":160,"h":30,"_ports":[[{"__data__":0}]],"status":{"text":"Active: 0 Waiting: 0\n Rollback: 0 Timed out: 0","fill":"green","shape":"ring"}},"x":660,"y":300,"wires":[["7ef233e9.b179bc"]]},{"id":"96b3e544.f77328","type":"inject","z":"87d0c3d2.51ad3","name":"Test inject to rollback ","topic":"","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"onceDelay":0.1,"x":130,"y":300,"wires":[["a9d606cf.f815a8"]]},{"id":"c06aa1fe.5e512","type":"inject","z":"87d0c3d2.51ad3","name":"test inject to checkpoint","topic":"","payload":"","payloadType":"date","repeat":"","crontab":"","once":false,"onceDelay":0.1,"x":140,"y":260,"wires":[["4fd7174a.f81dc8"]]},{"id":"4819cc3e.392de4","type":"Load Balance","z":"87d0c3d2.51ad3","name":"","routes":"2","outputs":3,"selection":"next","noavailability":"discard","nocapacity":"next","defaultcapacity":"21","sticky":false,"dynamic":"d88dad9a.40eae","mps":true,"x":400,"y":200,"wires":[[],["9d22ea52.af08f8"],[]]},{"id":"a2ed5455.9a0e18","type":"Load Balance","z":"87d0c3d2.51ad3","name":"","routes":"2","outputs":3,"selection":"next","noavailability":"discard","nocapacity":"next","defaultcapacity":"21","sticky":false,"dynamic":"d88dad9a.40eae","mps":false,"x":500,"y":120,"wires":[[],["d88dad9a.40eae"],["4819cc3e.392de4"]]},{"id":"4fd7174a.f81dc8","type":"function","z":"87d0c3d2.51ad3","name":"Add commit to stack","func":"\nmsg.commitStack.push({node:node, action: function() {\n    this.warn(\"test this commit processed\");\n}});\nmsg.commitStack.push({node:node, action: function() {\n    node.warn(\"test node commit processed\");\n}});\nmsg.rollbackStack.push({node:node, action: function() {\n    this.warn(\"test this rollback processed\");\n}});\nmsg.rollbackStack.push({node:node, action: function() {\n    node.warn(\"test node rollback processed\");\n}});\n\n\nreturn msg;","outputs":1,"noerr":0,"x":400,"y":260,"wires":[["9d22ea52.af08f8"]]}]
+[
+    {
+        "id": "3ca12348.91a3dc",
+        "type": "tab",
+        "label": "qm  test",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "3749be31.00eb52",
+        "type": "delay",
+        "z": "3ca12348.91a3dc",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "12",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "x": 700,
+        "y": 120,
+        "wires": [
+            [
+                "7e01a8ae.bdc268"
+            ]
+        ]
+    },
+    {
+        "id": "40d48853.f09548",
+        "type": "inject",
+        "z": "3ca12348.91a3dc",
+        "name": "",
+        "topic": "list",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 110,
+        "y": 60,
+        "wires": [
+            [
+                "5f8e31ce.e47d"
+            ]
+        ]
+    },
+    {
+        "id": "a9961dbc.6c89e",
+        "type": "debug",
+        "z": "3ca12348.91a3dc",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 870,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "71955f32.3de74",
+        "type": "inject",
+        "z": "3ca12348.91a3dc",
+        "name": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 100,
+        "y": 220,
+        "wires": [
+            [
+                "4e893f4c.81cd7"
+            ]
+        ]
+    },
+    {
+        "id": "404ccf31.5f767",
+        "type": "inject",
+        "z": "3ca12348.91a3dc",
+        "name": "release",
+        "topic": "release",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 90,
+        "y": 140,
+        "wires": [
+            [
+                "5f8e31ce.e47d"
+            ]
+        ]
+    },
+    {
+        "id": "fa793197.46f9a",
+        "type": "inject",
+        "z": "3ca12348.91a3dc",
+        "name": "pause",
+        "topic": "pause",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 90,
+        "y": 100,
+        "wires": [
+            [
+                "5f8e31ce.e47d"
+            ]
+        ]
+    },
+    {
+        "id": "7597bd9f.cea474",
+        "type": "inject",
+        "z": "3ca12348.91a3dc",
+        "name": "Test inject to rollback ",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 360,
+        "wires": [
+            [
+                "7fc22aee.874b84"
+            ]
+        ]
+    },
+    {
+        "id": "5c8be3a7.6dc49c",
+        "type": "inject",
+        "z": "3ca12348.91a3dc",
+        "name": "test inject to checkpoint",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 140,
+        "y": 300,
+        "wires": [
+            [
+                "574f998e.03c148"
+            ]
+        ]
+    },
+    {
+        "id": "7e01a8ae.bdc268",
+        "type": "Load Balance",
+        "z": "3ca12348.91a3dc",
+        "name": "",
+        "routes": "2",
+        "outputs": 3,
+        "selection": "next",
+        "noavailability": "discard",
+        "nocapacity": "next",
+        "defaultcapacity": "21",
+        "sticky": false,
+        "dynamic": "d88dad9a.40eae",
+        "mps": true,
+        "x": 560,
+        "y": 200,
+        "wires": [
+            [],
+            [
+                "94a34b6a.49dd98"
+            ],
+            [
+                "7fc22aee.874b84"
+            ]
+        ]
+    },
+    {
+        "id": "efe3f19a.e373a",
+        "type": "Load Balance",
+        "z": "3ca12348.91a3dc",
+        "name": "",
+        "routes": "2",
+        "outputs": 3,
+        "selection": "next",
+        "noavailability": "discard",
+        "nocapacity": "next",
+        "defaultcapacity": "21",
+        "sticky": false,
+        "dynamic": "d88dad9a.40eae",
+        "mps": false,
+        "x": 520,
+        "y": 120,
+        "wires": [
+            [],
+            [
+                "3749be31.00eb52"
+            ],
+            [
+                "7e01a8ae.bdc268"
+            ]
+        ]
+    },
+    {
+        "id": "574f998e.03c148",
+        "type": "function",
+        "z": "3ca12348.91a3dc",
+        "name": "Add commit to stack",
+        "func": "if(!msg.qm) {\n    node.error(\"Not queue managed, check config\");\n    return;\n}\nmsg.stackProcessor.add({node:node, commit: function(stackProcessor) {\n    node.warn(\"test this commit processed\");\n    stackProcessor.next();\n}});\nmsg.stackProcessor.add({node:node, commit: function(stackProcessor) {\n    node.warn(\"test node commit 2 processed\");\n    stackProcessor.next();\n}});\nmsg.stackProcessor.add({node:node, rollback: function(stackProcessor) {\n    node.warn(\"test this rollback processed\");\n    stackProcessor.next();\n}});\nmsg.stackProcessor.add({node:node, rollback: function(stackProcessor) {\n    node.warn(\"test node rollback 2 processed\");\n    stackProcessor.next();\n}});\nmsg.stackProcessor.add({node:node,\n    commit: function(stackProcessor) {\n        node.warn(\"test node commit 3 processed\");\n        stackProcessor.next();\n    },\n    rollback: function(stackProcessor) {\n        node.warn(\"test node rollback 3 processed\");\n        stackProcessor.next();\n    }\n});\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 400,
+        "y": 300,
+        "wires": [
+            [
+                "7e01a8ae.bdc268"
+            ]
+        ]
+    },
+    {
+        "id": "5f8e31ce.e47d",
+        "type": "Queue Manager Admin",
+        "z": "3ca12348.91a3dc",
+        "name": "Queue Manager Admin",
+        "queueManager": "5e05b628.8b6788",
+        "x": 350,
+        "y": 60,
+        "wires": [
+            [
+                "a9961dbc.6c89e"
+            ]
+        ]
+    },
+    {
+        "id": "7fc22aee.874b84",
+        "type": "Queue Rollback",
+        "z": "3ca12348.91a3dc",
+        "name": "",
+        "queueManager": "5e05b628.8b6788",
+        "x": 660,
+        "y": 360,
+        "wires": [
+            [
+                "a9961dbc.6c89e"
+            ]
+        ]
+    },
+    {
+        "id": "94a34b6a.49dd98",
+        "type": "Queue Checkpoint",
+        "z": "3ca12348.91a3dc",
+        "name": "",
+        "queueManager": "5e05b628.8b6788",
+        "x": 670,
+        "y": 300,
+        "wires": [
+            [
+                "a9961dbc.6c89e"
+            ]
+        ]
+    },
+    {
+        "id": "4e893f4c.81cd7",
+        "type": "Queue",
+        "z": "3ca12348.91a3dc",
+        "name": "aq",
+        "maxActive": 10,
+        "maxWaiting": 100,
+        "maxTime": 60000,
+        "maxRetries": 0,
+        "queueManager": "5e05b628.8b6788",
+        "x": 290,
+        "y": 140,
+        "wires": [
+            [
+                "efe3f19a.e373a"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "a5dd278a.bb9a68",
+        "type": "inject",
+        "z": "3ca12348.91a3dc",
+        "name": "debugToggle",
+        "topic": "debugToggle",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 110,
+        "y": 180,
+        "wires": [
+            [
+                "5f8e31ce.e47d"
+            ]
+        ]
+    },
+    {
+        "id": "5e05b628.8b6788",
+        "type": "Queue Manager",
+        "z": "",
+        "name": "test ",
+        "checkInterval": "1000",
+        "maxActive": "100",
+        "maxWaiting": "1000",
+        "maxTime": "10000",
+        "setqueues": {
+            "574f998e.03c148": {
+                "maxActive": "10",
+                "maxWaiting": "100",
+                "maxTime": "10000"
+            }
+        },
+        "setcheckpoints": {},
+        "setrollbacks": {}
+    }
+]

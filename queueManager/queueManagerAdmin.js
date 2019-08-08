@@ -4,12 +4,12 @@ let debug=true;
 function setMaxActive(q,n) {
 	q.maxActive=n;
 }
+let nodes=[];
 module.exports = function(RED) {
     function QueueManagerAdminNode(n) {
+    	nodes.push(this);
         RED.nodes.createNode(this,n);
         let node=Object.assign(this,n);
-//       node.QM=RED.nodes.getNode(node.queueManager);
-//    	node.qm.addStatusCheck.apply(node.QM,[node]);
         node.on('input', function (msg) {
         	switch (msg.topic) {
         		case 'list':
@@ -27,24 +27,28 @@ module.exports = function(RED) {
         		case 'release':
         			node.qm.maxActive=node.qm.old.maxActive;
         			msg.payload="released";
-        			node.qm.checkLoop.apply(node.QM);
         			break;
         		case 'set':
         			Object.assign(node.QM,msg.payload);
+        			break;
+        		case 'debugToggle':
+        			msg.payload=node.qm.debugToggle.apply(node.QM,[RED]);
         			break;
         		default:
         			msg.payload={error:"unknown topic"};
         	}
 			node.send(msg);
         });
-		RED.events.on("nodes-started",function() {
-			node.status({ fill:"red", shape:"dot", text: "Queue manager initialisation "});
-   			node.log("Initialising for queue manager "+node.queueManager);
-	        node.qm=RED.nodes.getNode(node.queueManager);
-			node.qm.addStatusCheck.apply(node.qm,[node]);
-		});
-
     }
+	RED.events.on("nodes-started",function() {
+		while(nodes.length>0) {
+			let node=nodes.pop();
+			node.log("Initialising for queue manager "+node.queueManager);
+			node.status({ fill:"red", shape:"dot", text: "Queue manager initialisation "});
+			node.qm=RED.nodes.getNode(node.queueManager);
+			node.qm.addStatusCheck.apply(node.qm,[node]);
+		}
+	});
     RED.nodes.registerType("Queue Manager Admin",QueueManagerAdminNode);
 };
 

@@ -9,16 +9,6 @@ module.exports = function(RED) {
         node.on('input', function (msg) {
 			node.send(msg);
         });
-/*
-		RED.events.setMaxListeners(RED.events.getMaxListeners()+1);
-		RED.events.on("nodes-started",function() {
-	       	node.log("connecting to Queue Manager "+node.queueManager);
-			node.status({ fill:"red", shape:"dot", text: "Queue manager initialisation "});
-	        node.qm=RED.nodes.getNode(node.queueManager);
-	        node.log("adding wrapper for queue manager "+node.qm.name);
-	        node.qm.addQueueWrapper(node,node);
-		});
-*/    
     }
     RED.httpAdmin.get("/queue/:id/:action/",  function(req,res) {
     	var node = RED.nodes.getNode(req.params.id);

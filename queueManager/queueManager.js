@@ -1,8 +1,8 @@
 const ts=(new Date().toString()).split(' ');
 console.log([parseInt(ts[2],10) ,ts[1],ts[4]].join(' ')+" - [info] queueManager Copyright 2019 Jaroslav Peter Prib");		
 const overflowMsgStop=10;
-let debug=true;
-
+let debug=false;
+let nodes=[];
 function msgDebug(msg) {
 	return "properties: "+Object.getOwnPropertyNames(msg).toString();
 }
@@ -186,11 +186,16 @@ function inputWrapper(msg) {
 		function(processStack) {
 			if(debug) console.log("queue Manager input wrapper initial group "+processStack.parent._msgid);
 			SetEndActive(processStack.parent);
+			if(processStack.notOK && this.type=="Queue") {
+				this.send.apply(this,[[null,msg]]);
+			} else {
+				delete processStack.parent.qm;
+			}
 			processStack.next();
 		},
 		function(msg) {  //retry call
 			if(debug) console.log("queue Manager input wrapper set retry try again");
-			msg.startTime=Date.now();
+			msg.qm.activeStartTime=Date.now();
 			msg.stackProcessor.add({
 				node:this,
 				rollback:function(processStack) {
@@ -233,6 +238,7 @@ function inputWrapper(msg) {
 	q.waiting.push(msg);
 }
 function removeQueueWrapper (n) {
+	this.log("removing queue input wrapper for node "+nodeLabel(n));
 	n.removeListener('input', n.qm.q.inputListener);
 	n.on('input',n.qm.q.inputListener);
 	delete n.qm;
@@ -264,20 +270,16 @@ function addQueueWrapper (n,o) {
 	n.qm.q.inputListener=n.listeners('input')[0];
 	n.removeListener('input', n.qm.q.inputListener);
 	n.on('input',inputWrapper);
+	this.closeStack.push({node:this,removeFunction:removeQueueWrapper,argument:[n]});
 	if(n.showStatus) n.status({ fill: 'green', shape: 'ring', text: "ready"});
 }
-function remCheckpointWrapper (n) {
-	this.log("removing checkpoint wrapper to node "+nodeLabel(n));
-	delete this.checkpoints[n.id];
-	n.send=n.orginalSend;
-}
 function addSendOveride(n,id) {
-	const orginalSend=n.send
-	if(n.hasOwnProperty("orginalSend")) {
+	if(n.orginalSend) {
 		n.error("adding "+id+" failed as already orginal send exists");
 		if(n.showStatus) n.status({ fill: 'red', shape: 'ring', text: "adding wrapper failed as already orginal send exists"});
 		return;
 	}
+	const orginalSend=n.send;
 	if(debug) {
 		n.orginalSendDebug=orginalSend;
 		n.orginalSend=function(msg) {
@@ -320,12 +322,17 @@ function addCheckpointWrapper (n) {
 		if(this.showStatus) n.status({ fill: 'yellow', shape: 'ring', text: "Received message(s) not queue managed"});
 		this.orginalSend.apply(n,[]);
 	};
+	this.closeStack.push({node:this,removeFunction:removeSendWrapper,argument:[n]});
 	if(n.showStatus) n.status({ fill: 'green', shape: 'ring', text: "ready"});
 }
-function removeRollbackWrapper (n) {
-	this.log("removing checkpoint wrapper to node "+nodeLabel(n));
-	delete this.rollbacks[n.id];
-	n.send=n.orginalSend;
+function removeSendWrapper(n) {
+	this.log("removing send wrapper from node "+nodeLabel(n));
+	try{
+		n.send=n.orginalSend;
+		n.orginalSend=null;
+	} catch(e) {
+		n.log("error removing send wrapper "+e);	
+	}
 }
 function addRollbackWrapper (n) {
 	if(debug) console.log("queue Manager addRollbackWrapper ");
@@ -348,6 +355,7 @@ function addRollbackWrapper (n) {
 		}
 		msg.stackProcessor.rollback(msg);
 	};
+	this.closeStack.push({node:this,removeFunction:removeSendWrapper,argument:[n]});
 	if(n.showStatus) n.status({ fill: 'green', shape: 'ring', text: "ready"});
 }
 function emptyQueue(q) {
@@ -400,7 +408,7 @@ function qmList(RED) {
 		n=RED.nodes.getNode(p);
 		queues[p]={
 			id:p,
-			node:n.id,
+			node:(n.id||"*** internal error missing id"),
 			name:(n.name||"*** node not found"),
 			maxTime:q.maxTime,
 			maxRetries:q.maxRetries,
@@ -416,9 +424,42 @@ function qmList(RED) {
 	}
 	return {queues:queues, active:(this.active||0), checkpoints:this.checkpoints, rollbacks:this.rollbacks};
 }
+function onNodesStarted(RED,node) {
+	if(debug) console.log("onNodesStarted "+nodeLabel(node));
+	//state not saved on close event so on redeploy need to remove previous applied wrapper
+    node.log("removing "+node.closeStack.length+" wrappers on nodes");
+    while(node.closeStack.length) {
+    	let n=node.closeStack.pop();
+    	if(debug) console.log("onNodesStarted "+nodeLabel(n));
+    	try{
+        	n.removeFunction.apply(n.node,n.argument);
+    	} catch(e) {
+    		node.error("failed "+nodeLabel(n.node)+" error: "+e.toString());
+    	}
+    }
+    node.log("All nodes have started now adding wrappers");
+    try{
+    	const users = node._users.map(id => RED.nodes.getNode(id));
+        node.log("Queues nodes");
+    	users.filter(n => n.type=="Queue").forEach(c=>node.addQueueWrapper.apply(node,[c,c]));
+    	node.checkChanges(RED,node.queues,node.setqueues,node.addQueueWrapper,node.removeQueueWrapper);
+        node.log("Queue wrappers processed");
+        node.log("Checkpoints nodes");
+    	users.filter(n => n.type=="Queue Checkpoint").forEach(c=>node.addCheckpointWrapper.apply(node,[c]));
+        node.checkChanges(RED,node.checkpoints,node.setcheckpoints,node.addCheckpointWrapper,node.removeSendWrapper);
+        node.log("Checkpoint wrappers processed");
+        node.log("Rollback nodes");
+    	users.filter(n => n.type=="Queue Rollback").forEach(c=>node.addRollbackWrapper.apply(node,[c]));
+        node.checkChanges(RED,node.rollbacks,node.setrollbacks,node.addRollbackWrapper,node.removeSendWrapper);
+        node.log("Rollback wrappers processed");
+    } catch(e) {
+    	node.error("error in adding wrappers: "+e)
+    }
+}
 module.exports = function(RED) {
     function QueueManagerNode(n) {
         RED.nodes.createNode(this,n);
+        nodes.push(this);
         var node=Object.assign(this,{active:0,checkInterval:1000,queues:{},checkpoints:{},rollbacks:{}},n);
         node.old={maxActive:node.maxActive,maxWaiting:node.maxWaiting};
         node.addQueueWrapper=addQueueWrapper;
@@ -426,48 +467,21 @@ module.exports = function(RED) {
         node.addRollbackWrapper=addRollbackWrapper;
         node.checkChanges=checkChanges;
         node.qmList=qmList;
+        node.debugToggle=function(){debug=!debug;};
         node.emptyQueue=emptyQueue;
         node.purgeQueue=purgeQueue;
         node.setMaxActive=setMaxActive;
         node.release1=release1;
         node.statusCheck=[];
+        node.closeStack=[];
         node.addStatusCheck=addStatusCheck;
 
-        RED.events.on("nodes-started",function() {
-            node.log("All nodes have started now adding wrappers");
-            try{
-            	const users = node._users.map(id => RED.nodes.getNode(id));
-            	
-            	node.checkChanges(RED,node.queues,n.setqueues,node.addQueueWrapper,node.removeQueueWrapper);
-                node.log("Queues nodes");
-            	users.filter(n => n.type=="Queue").forEach(c=>node.addQueueWrapper.apply(node,[c,c]));
-                node.log("Queue wrappers processed");
-                node.checkChanges(RED,node.checkpoints,n.setcheckpoints,node.addCheckpointWrapper,node.removeCheckpointWrapper);
-                node.log("Checkpoints nodes");
-            	users.filter(n => n.type=="Queue Checkpoint").forEach(c=>node.addCheckpointWrapper.apply(node,[c]));
-                node.log("Checkpoint wrappers processed");
-                node.checkChanges(RED,node.rollbacks,n.setrollbacks,node.addRollbackWrapper,node.removeRollbackWrapper);
-                node.log("Rollback nodes");
-            	users.filter(n => n.type=="Queue Rollback").forEach(c=>node.addRollbackWrapper.apply(node,[c]));
-                node.log("Rollback wrappers processed");
-            } catch(e) {
-            	node.error("error in adding wrappers: "+e)
-            }
-        })
-        
         RED.httpAdmin.get('/queuemanager/list',function(req,res) {
         	res.json(node.qmList(RED));
         });
 
         node.on("close", function(removed,done) {
             clearInterval(node.check); 
-            node.log("removing wrappers on nodes");
-            node.checkChanges(RED,node.queues,{},null,node.removeQueueWrapper);
-        	users.filter(n => n.type=="Queue").forEach(c=>node.removeQueueWrapper.apply(node[c]));
-            node.checkChanges(RED,node.checkpoints,{},null,node.removeCheckpointWrapper);
-        	users.filter(n => n.type=="Queue Checkpoint").forEach(c=>node.removeCheckpointWrapper.apply(node,[c]));
-            node.checkChanges(RED,node.rollbacks,{},null,node.removeRollbackWrapper);        
-        	users.filter(n => n.type=="Queue Rollback").forEach(c=>node.removeRollbackWrapper.apply(node,[c]));
             done();
         });
         function checkLoop() {
@@ -476,7 +490,7 @@ module.exports = function(RED) {
 				node.lastCheckHearbeatMsg=pit;
 				node.log("Check loop still running");
 			}
-        	for (p in node.queues) {
+        	for(p in node.queues) {
         		q=node.queues[p];
         		q.overflowCnt=0;
         		for(m in q.active) {	//check active messages and kill those over a limit
@@ -505,6 +519,16 @@ module.exports = function(RED) {
         node.check = setInterval(checkLoop, node.checkInterval);
         node.log("check loop started on interval "+node.checkInterval);
     }
+	RED.events.on("nodes-started",function() {
+		if(debug) console.log("queue Manager "+nodes.length+" nodes to post start");
+		while(nodes.length) {
+			try{
+				onNodesStarted(RED,nodes.pop());
+			} catch(e) {
+				console.log([parseInt(ts[2],10) ,ts[1],ts[4]].join(' ')+" - [error] queueManager "+nodeLabel(n)+" error "+e.message);
+			}
+		}
+	});
     RED.nodes.registerType("Queue Manager",QueueManagerNode);
 };
 
