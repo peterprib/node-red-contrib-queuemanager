@@ -14,7 +14,8 @@ module.exports = function(RED) {
     	var node = RED.nodes.getNode(req.params.id);
     	if (node && node.type==="Queue") {
     	    try {
-    	    	let qm=RED.nodes.getNode(node.queueManager.id);
+    	    	let qm=RED.nodes.getNode(node.queueManager);
+    	    	if(!qm) throw Error("Queue Manager "+node.queueManager+" not found");
     	    	switch (req.params.action) {
     	    		case 'empty':
     	       	    	qm.emptyQueue(node.qm.q);
