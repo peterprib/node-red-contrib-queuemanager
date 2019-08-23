@@ -361,7 +361,7 @@ function addRollbackWrapper (n) {
 function emptyQueue(q) {
 	let i=0,msg
 	while(q.waiting.length>0) {
-		msg=q.waiting.pop();
+		msg=q.waiting.shift();
 		i++
 		msg.stackProcessor.rollback(msg);
 	}
@@ -370,7 +370,7 @@ function emptyQueue(q) {
 function purgeQueue(q) {
 	let i=0,msg
 	while(q.waiting.length>0) {
-		msg=q.waiting.pop();
+		msg=q.waiting.shift();
 		i++
 	}
 	return i;
@@ -502,7 +502,7 @@ module.exports = function(RED) {
         			}
     			}
         		while (q.waiting.length && q.activeCnt<q.maxActive && node.active < node.maxActive) { // activate waiting messages if possible
-                		activateMessage.apply(q.node,[q.waiting.pop()]);
+                		activateMessage.apply(q.node,[q.waiting.shift()]);
         		}
         		if(q.node.showStatus) {
         			q.node.status({ fill: (q.maxActive>0?'green':'yellow'), shape: 'ring', text: (q.maxActive>0?'':'Paused ')+ "Active: "+q.activeCnt+" Waiting: "+q.waiting.length+" Rollback: "+(q.rollbackCnt||0)+" Timed out: "+(q.timeOutCnt||0) });

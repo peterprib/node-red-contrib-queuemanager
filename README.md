@@ -111,6 +111,7 @@ Test/example flow in test/testflow.json which requires [loadbalance][4]
 
 # Version
 
+0.1.2 Fix queue consumption to FIFO
 0.1.0 Major rewrite to have stack processor be callback thus allow async rollback/commit calls
 
 0.0.4 Add ability to hold/release queue and release a single message
