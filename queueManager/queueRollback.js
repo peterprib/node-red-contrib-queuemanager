@@ -1,5 +1,7 @@
-const ts=(new Date().toString()).split(' ');
-console.log([parseInt(ts[2],10),ts[1],ts[4]].join(' ')+" - [info] queueRollback Copyright 2019 Jaroslav Peter Prib");
+const Logger = require("node-red-contrib-logger");
+const logger = new Logger("queueRollback");
+logger.sendInfo("Copyright 2020 Jaroslav Peter Prib");
+
 module.exports = function(RED) {
     function QueueRollbackNode(n) {
         RED.nodes.createNode(this,n);

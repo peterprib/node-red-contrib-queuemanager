@@ -1,5 +1,7 @@
-const ts=(new Date().toString()).split(' ');
-console.log([parseInt(ts[2],10) ,ts[1],ts[4]].join(' ')+" - [info] queueManagerAdmin Copyright 2019 Jaroslav Peter Prib");		
+const Logger = require("node-red-contrib-logger");
+const logger = new Logger("queueManagerAdmin");
+logger.sendInfo("Copyright 2020 Jaroslav Peter Prib");
+
 let debug=true;
 function setMaxActive(q,n) {
 	q.maxActive=n;
@@ -13,7 +15,7 @@ module.exports = function(RED) {
         node.on('input', function (msg) {
         	switch (msg.topic) {
         		case 'list':
-        			msg.payload=node.qm.qmList.apply(node.QM,[RED]);
+        			msg.payload=node.qm.qmList.apply(node.qm,[RED]);
         			break;
         		case 'pause':
         			if(node.qm.maxActive==0) {
@@ -29,10 +31,10 @@ module.exports = function(RED) {
         			msg.payload="released";
         			break;
         		case 'set':
-        			Object.assign(node.QM,msg.payload);
+        			Object.assign(node.qm,msg.payload);
         			break;
         		case 'debugToggle':
-        			msg.payload=node.qm.debugToggle.apply(node.QM,[RED]);
+        			msg.payload=node.qm.debugToggle.apply(node.qm,[RED]);
         			break;
         		default:
         			msg.payload={error:"unknown topic"};
@@ -51,4 +53,3 @@ module.exports = function(RED) {
 	});
     RED.nodes.registerType("Queue Manager Admin",QueueManagerAdminNode);
 };
-

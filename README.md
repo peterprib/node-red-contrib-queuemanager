@@ -110,7 +110,7 @@ Test/example flow in test/testflow.json which requires [loadbalance][4]
 ------------------------------------------------------------
 
 # Version
-
+0.2.0 fix to work with node-red v1 which changed from emitters to callback
 0.1.2 Fix queue consumption to FIFO
 0.1.0 Major rewrite to have stack processor be callback thus allow async rollback/commit calls
 

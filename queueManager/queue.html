@@ -37,6 +37,33 @@
 </script>
 
 <script type="text/javascript">
+function json2html(obj){
+	if(obj==="undefined" || obj === null) return "";
+	const objType=(typeof obj);
+	if(objType!=="object") return obj;
+	let elementValue ="";
+	if(obj.constructor === Array) {
+		for(let i=0;i<obj.length;i++) {
+			const objI=obj[i],objTypeI=typeof objI;
+			if(objTypeI!== 'object'||objI.constructor==Object) {
+				elementValue+="<tr><td>"+i+"</td><td>"+json2html(objI)+"</td></tr>";
+				continue;
+			}
+			throw new Error(objTypeI+" is not supported.");
+		}
+		return "<table>"+elementValue+"</table>";
+	}
+	if(obj.constructor!==Object) return obj;
+	const objText=obj['#text'],objTypeText=(typeof objText);
+	if(objTypeText!=='undefined') {
+		if(objTypeText=='object') throw new Error(objTypeText+' which is #text, not supported.');
+		return objText;
+	}
+	for(let name in obj) {
+		elementValue+="<tr><td>"+name+"</td><td>"+json2html(obj[name])+"</td></tr>";	
+	}
+	return "<table>"+elementValue+"</table>";
+}
     RED.nodes.registerType('Queue',{
     	category: 'function',
         defaults: {
@@ -82,19 +109,30 @@
                 function sendCommand(element,action) {
                 	$(element).dialog("close");
                 	$.get( "/queue/"+node.id+"/"+action )
-			        .done(function( json ) {
-            			    	RED.notify(node._("Queue signal success",{label:label}),{type:"success",id:"Load Injector"});
-                			}).fail(function( jqXHR, textStatus, error ) {
-                   				if (jqXHR.status === 404) {
-     			                	RED.notify(node._("Queue signal not deployed"),"error");
-                				} else if (jqXHR.status === 500) {
-   				                	RED.notify(node._("Queue signal inject failed with error "+textStatus||""),"error");
-                				} else if (jqXHR.status === 0) {
- 									RED.notify(node._("Queue signal no response"),"error");
-                   				} else {
-									RED.notify(node._("Queue signal unexpected status:"+jqXHR.status+" message:"+textStatus),"error");
+			        .done(function(json) {
+				    	RED.notify(node._("Queue signal success",{label:label}),{type:"success",id:"Load Injector"});
+						if(action=="getMessages"){
+							const title=(node.name||'Queue'+" Messsages   ");
+							$('<div></div>').appendTo('body').html(json.length?json2html(json):"empty queue")
+  							.dialog({
+      							modal: true, title: title, zIndex: 10000, autoOpen: true,
+   								width: 'auto', resizable: true,"min-width": (title.length) + "px",
+								close: function (event, ui) {
+				    				$(this).remove();
 								}
 							});
+						}
+					}).fail(function( jqXHR, textStatus, error ) {
+						if(jqXHR.status === 404) {
+		                	RED.notify(node._("Queue signal not deployed"),"error");
+                		} else if(jqXHR.status === 500) {
+		                	RED.notify(node._("Queue signal inject failed with error "+textStatus||""),"error");
+           				} else if(jqXHR.status === 0) {
+							RED.notify(node._("Queue signal no response"),"error");
+           				} else {
+							RED.notify(node._("Queue signal unexpected status:"+jqXHR.status+" message:"+textStatus),"error");
+						}
+					});
                 }
                 $('<div></div>').appendTo('body').html('<div>Choose Action</div>')
   				.dialog({
@@ -103,6 +141,9 @@
 					buttons: {
 						Hold: function () {
 							sendCommand(this,"hold");
+						},
+						Messages: function () {
+							sendCommand(this,"getMessages");
 						},
 						Release: function () {
 							sendCommand(this,"release");
@@ -116,9 +157,9 @@
 						Purge: function () {
 							sendCommand(this,"purge");
 						},
-						Close: function () {
-							$(this).dialog("close");
-						}
+						Debug: function () {
+							sendCommand(this,"debug");
+						},
 					},
 					close: function (event, ui) {
 				    	$(this).remove();
