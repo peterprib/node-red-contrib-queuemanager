@@ -8,7 +8,7 @@
 
 ![Queue Manager](queueManager/icons/icons8-networking-manager-64.png "Queue Manager")
 
-Management node which can turn other nodes to act like queue, checkpoint or rollback by wrappering base node input with queue manager input which is called before passing message to input of node. For example catch node can be made to act like rollback node.
+Management node which can turn other nodes to act like queue, checkpoint or rollback by wrapping base node input with queue manager input which is called before passing message to input of node. For example catch node can be made to act like rollback node.
 
 ![Queue Manager Node](documentation/qm.JPG "Queue Manager Node") 
 
@@ -110,7 +110,7 @@ Test/example flow in test/testflow.json which requires [loadbalance][4]
 ------------------------------------------------------------
 
 # Version
-0.2.0 fix to work with node-red v1 which changed from emitters to callback
+0.2.1 fix to work with node-red v1 which changed from emitters to callback
 0.1.2 Fix queue consumption to FIFO
 0.1.0 Major rewrite to have stack processor be callback thus allow async rollback/commit calls
 
