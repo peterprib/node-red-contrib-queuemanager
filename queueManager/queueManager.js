@@ -197,7 +197,7 @@ function inputWrapper(msg) {
 		function(processStack) {
 			if(logger.active) logger.send({label:"inputWrapper initial group",msg:processStack.parent._msgid});
 			SetEndActive(processStack.parent);
-			if(processStack.notOK && this.type=="Queue") {
+			if(processStack.notOK && this.type==="Queue") {
 				this.send.apply(this,[[null,msg]]);
 			} else {
 				delete processStack.parent.qm;
@@ -300,6 +300,7 @@ function addQueueWrapper (n,o) {
 	}
 	this.closeStack.push({node:this,removeFunction:removeQueueWrapper,argument:[n]});
 	if(n.showStatus) n.status({ fill: 'green', shape: 'ring', text: "ready"});
+	if(n.type=="Queue" && this.hold) n.qm.setMaxActive(n.qm.q,0);
 }
 function addSendOveride(n,id) {
 	if(n.orginalSend) {
@@ -409,6 +410,14 @@ function purgeQueue(q) {
 function setMaxActive(q,n) {
 	q.maxActive=n;
 }
+function activeUp1(q) {
+	q.maxActive++;
+	release1(q);
+}
+function activeDown1(q,n) {
+	if(q.maxActive<0) return;
+	q.maxActive--;
+}
 function release1(q) {
 	if(q.waiting.length>0) {
 		activateMessage.apply(q.node,[q.waiting.pop()]);
@@ -424,7 +433,7 @@ function SetEndActive(msg) {
 		q.node.warn("SetEndActived active msg ended even though actve is zero");
 		return;
 	}
-	while( q.waiting.length>0 && q.activeCnt<q.maxActive && node.active<node.maxActive) {
+	while( q.waiting.length>0 && q.activeCnt<q.maxActive && q.node.active<q.node.maxActive) {
 		activateMessage.apply(q.node,[q.waiting.pop()]);
 	}
 	msg.qm.active--;
@@ -496,6 +505,7 @@ module.exports = function(RED) {
 			addQueueWrapper:addQueueWrapper,addCheckpointWrapper:addCheckpointWrapper,addRollbackWrapper:addRollbackWrapper,
 			checkChanges:checkChanges,qmList:qmList,emptyQueue:emptyQueue,purgeQueue:purgeQueue,
 			setMaxActive:setMaxActive,release1:release1,getMessages:getMessages,addStatusCheck:addStatusCheck,
+			activeUp1:activeUp1,activeDown1:activeDown1
 			},
 			n);
 		node.old={maxActive:node.maxActive,maxWaiting:node.maxWaiting};

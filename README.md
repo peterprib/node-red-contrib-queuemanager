@@ -110,8 +110,13 @@ Test/example flow in test/testflow.json which requires [loadbalance][4]
 ------------------------------------------------------------
 
 # Version
+
+0.2.2 Add a few more queue controls (+/- active). Get better details if fail. Fix bug with maximum allowed.  Display messages and add security around these calls.
+
 0.2.1 fix to work with node-red v1 which changed from emitters to callback
+
 0.1.2 Fix queue consumption to FIFO
+
 0.1.0 Major rewrite to have stack processor be callback thus allow async rollback/commit calls
 
 0.0.4 Add ability to hold/release queue and release a single message

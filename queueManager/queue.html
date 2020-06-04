@@ -1,38 +1,45 @@
 <script type="text/x-red" data-help-name="Queue">
-    <p>Define a Queue</p>
+	<p>Define a Queue</p>
 </script>
 
 <script type="text/x-red" data-template-name="Queue">
 
-    <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
-    </div>
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name" placeholder="Name">
+	</div>
 
 	<div class="form-row">
-    	<label for="node-input-queueManager"><i class="fa fa-server"></i> Queue Manager</label>
-    	<input type="text" id="node-input-queueManager">
+		<label for="node-input-queueManager"><i class="fa fa-server"></i> Queue Manager</label>
+		<input type="text" id="node-input-queueManager">
   	</div>
 
-    <div class="form-row">
-        <label for="node-input-maxWaiting"><i class="icon-bookmark"></i> Max Waiting</label>
-        <input type="number" id="node-input-maxWaiting" step=10 min=0 max=100000 >
-    </div>
+	<div class="form-row">
+		<label for="node-input-maxWaiting"><i class="icon-bookmark"></i> Max Waiting</label>
+		<input type="number" id="node-input-maxWaiting" step=10 min=0 max=100000 >
+	</div>
 
-    <div class="form-row">
-        <label for="node-input-maxActive"><i class="icon-bookmark"></i> Max Active</label>
-        <input type="number" id="node-input-maxActive"step=1 min=0 max=1000  >
-    </div>
+	<div class="form-row">
+		<label for="node-input-maxActive"><i class="icon-bookmark"></i> Max Active</label>
+		<input type="number" id="node-input-maxActive"step=1 min=0 max=1000  >
+	</div>
 
-    <div class="form-row">
-        <label for="node-input-maxTime"><i class="icon-bookmark"></i> Max Time (millisecs)</label>
-        <input type="number" id="node-input-maxTime"step=100 min=100 max=100000 >
-    </div>
+	<div class="form-row">
+		<label for="node-input-maxTime"><i class="icon-bookmark"></i> Max Time (millisecs)</label>
+		<input type="number" id="node-input-maxTime"step=100 min=100 max=100000 >
+	</div>
 
-    <div class="form-row">
-        <label for="node-input-maxRetries"><i class="icon-bookmark"></i> Max Retries</label>
-        <input type="number" id="node-input-maxRetries" min=0 max=100 >
-    </div>
+	<div class="form-row">
+		<label for="node-input-maxRetries"><i class="icon-bookmark"></i> Max Retries</label>
+		<input type="number" id="node-input-maxRetries" min=0 max=100 >
+	</div>
+
+	<div class="form-row">
+		<label for="node-input-hold"> </label>
+		<label for="node-input-hold" style="width:70%">
+			<input type="checkbox" id="node-input-hold" style="display:inline-block; width:22px; vertical-align:baseline;"><span data-i18n="debug.toHold"></span>
+		</label>
+	</div>
 
 </script>
 
@@ -64,83 +71,87 @@ function json2html(obj){
 	}
 	return "<table>"+elementValue+"</table>";
 }
-    RED.nodes.registerType('Queue',{
-    	category: 'function',
-        defaults: {
-            name: {value:"",required:false},
-            maxActive: {value:10,required:true,validate:RED.validators.number()},
-            maxWaiting: {value:100,required:true,validate:RED.validators.number()},
-            maxTime: {value:60000,required:true,validate:RED.validators.number()}, // 1 minute
-            maxRetries: {value:0,required:true,validate:RED.validators.number()},
-            queueManager: {type:"Queue Manager",required:true}
-        },
-	    inputs:1,
-        inputLabels: "",
-        outputs:2,
-        outputLabels: ["Response","Timeout","Errors"],
-        icon: "icons8-inbox-64.png",
-        label: function() {
-            return this.name||this._("Queue");
-        },
-        labelStyle: function() {
-            return "node_label_italic";
-        },
-        oneditprepare: function() {
-        },
-        oneditsave: function() {
-        },
-        oneditresize: function(size) {
-        },
-        button: {
-            enabled: function() {
-                return !this.changed;
-            },
-            onclick: function() {
-                if (this.changed) {
-                    return RED.notify(RED._("Queue undeployed changes"),"warning");
-                }
-                var label = this._def.label.call(this);
-                if (label.length > 30) {
-                    label = label.substring(0,50)+"...";
-                }
-                label = label.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-                var node = this;
-                
-                function sendCommand(element,action) {
-                	$(element).dialog("close");
-                	$.get( "/queue/"+node.id+"/"+action )
-			        .done(function(json) {
-				    	RED.notify(node._("Queue signal success",{label:label}),{type:"success",id:"Load Injector"});
+	RED.nodes.registerType('Queue',{
+		category: 'function',
+		defaults: {
+			name: {value:"",required:false},
+			hold: {value:false,required:false},
+			maxActive: {value:10,required:true,validate:RED.validators.number()},
+			maxWaiting: {value:100,required:true,validate:RED.validators.number()},
+			maxTime: {value:60000,required:true,validate:RED.validators.number()}, // 1 minute
+			maxRetries: {value:0,required:true,validate:RED.validators.number()},
+			queueManager: {type:"Queue Manager",required:true}
+		},
+		inputs:1,
+		inputLabels: "",
+		outputs:2,
+		outputLabels: ["Response","Timeout","Errors"],
+		icon: "icons8-inbox-64.png",
+		label: function() {
+			return this.name||this._("Queue");
+		},
+		labelStyle: function() {
+			return "node_label_italic";
+		},
+		oneditprepare: function() {
+		},
+		oneditsave: function() {
+		},
+		oneditresize: function(size) {
+		},
+		button: {
+			enabled: function() {
+				return !this.changed;
+			},
+			onclick: function() {
+				if (this.changed) {
+					return RED.notify(RED._("Queue undeployed changes"),"warning");
+				}
+				var label = this._def.label.call(this);
+				if (label.length > 30) {
+					label = label.substring(0,50)+"...";
+				}
+				label = label.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+				var node = this;
+				
+				function sendCommand(element,action) {
+					$(element).dialog("close");
+					$.get( "/queue/"+node.id+"/"+action+"/" )
+					.done(function(json) {
+						RED.notify(node._("Queue signal success",{label:label}),{type:"success",id:"Load Injector"});
 						if(action=="getMessages"){
 							const title=(node.name||'Queue'+" Messsages   ");
 							$('<div></div>').appendTo('body').html(json.length?json2html(json):"empty queue")
   							.dialog({
-      							modal: true, title: title, zIndex: 10000, autoOpen: true,
+	  							modal: true, title: title, zIndex: 10000, autoOpen: true,
    								width: 'auto', resizable: true,"min-width": (title.length) + "px",
 								close: function (event, ui) {
-				    				$(this).remove();
+									$(this).remove();
 								}
 							});
 						}
 					}).fail(function( jqXHR, textStatus, error ) {
 						if(jqXHR.status === 404) {
-		                	RED.notify(node._("Queue signal not deployed"),"error");
-                		} else if(jqXHR.status === 500) {
-		                	RED.notify(node._("Queue signal inject failed with error "+textStatus||""),"error");
-           				} else if(jqXHR.status === 0) {
+							RED.notify(node._("Queue signal not deployed"),"error");
+						} else if(jqXHR.status === 500) {
+							RED.notify(node._("Queue signal inject failed with error "+textStatus||""),"error");
+		   				} else if(jqXHR.status === 0) {
 							RED.notify(node._("Queue signal no response"),"error");
-           				} else {
+		   				} else {
 							RED.notify(node._("Queue signal unexpected status:"+jqXHR.status+" message:"+textStatus),"error");
 						}
 					});
-                }
-                $('<div></div>').appendTo('body').html('<div>Choose Action</div>')
+				}
+				$('<div></div>').appendTo('body').html('<div>Choose Action</div>')
   				.dialog({
-      				modal: true, title: (node.name||'Queue'), zIndex: 10000, autoOpen: true,
+	  				modal: true, title: (node.name||'Queue'), zIndex: 10000, autoOpen: true,
    					width: 'auto', resizable: false,
 					buttons: {
 						Hold: function () {
 							sendCommand(this,"hold");
+						},
+						"Hold+Rollback Active ": function () {
+							sendCommand(this,"holdAndRollBackActive");
 						},
 						Messages: function () {
 							sendCommand(this,"getMessages");
@@ -151,22 +162,30 @@ function json2html(obj){
 						"Release 1": function () {
 							sendCommand(this,"release1");
 						},
+						"active +": function () {
+							sendCommand(this,"activeUp1");
+						},
+						"active -": function () {
+							sendCommand(this,"activeDown1");
+						},
 						Rollback: function () {
 							sendCommand(this,"empty");
+						},
+						"Rollback Active": function () {
+							sendCommand(this,"rollBackActive");
 						},
 						Purge: function () {
 							sendCommand(this,"purge");
 						},
 						Debug: function () {
 							sendCommand(this,"debug");
-						},
+						}
 					},
 					close: function (event, ui) {
-				    	$(this).remove();
+						$(this).remove();
 					}
 				});
-            }
-        }
-        
-    });
+			}
+		}	
+	});
 </script>

@@ -11,28 +11,40 @@ module.exports = function(RED) {
 			node.send(msg);
 		});
 	}
-	RED.httpAdmin.get("/queue/:id/:action/",  function(req,res) {
-		var node = RED.nodes.getNode(req.params.id);
-		if (node && node.type==="Queue") {
+	RED.httpAdmin.get("/queue/:id/:action", RED.auth.needsPermission('admin.write'), function(req,res) {
+		const warning="Request to "+req.params.action;
+		logger.sendWarning(warning);
+		let node=RED.nodes.getNode(req.params.id);
+		if (node && node.type===logger.label) {
 			try {
-				node.warn("Request to "+req.params.action);
+				node.warn(warning);
 				let qm=RED.nodes.getNode(node.queueManager);
 				if(!qm) throw Error("Queue Manager "+node.queueManager+" not found");
 				switch (req.params.action) {
-				case 'empty':
-					qm.emptyQueue(node.qm.q);
+				case 'activeUp1':
+//					qm.activeUp1.apply(node.qm.q,[RED]);
+					qm.activeUp1(node.qm.q);
+					break;
+				case 'activeDown1':
+					qm.activeDown1(node.qm.q);
+//					qm.activeDown1.apply(node.qm.q,[RED]);
 					break;
 				case 'debug':
-					qm.debugToggle.apply(qm,[RED])
+					qm.debugToggle.apply(qm,[RED]);
+					break;
+				case 'empty':
+					qm.emptyQueue(node.qm.q);
 					break;
 				case 'getMessages':
 					res.status(200).json(qm.getMessages(node.qm.q));
 					return;
-				case 'purge':
-					qm.purgeQueue(node.qm.q);
-					break;
 				case 'hold':
 					qm.setMaxActive(node.qm.q,0);
+					break;
+				case 'holdAndRollBackActive':
+					qm.setMaxActive(node.qm.q,0);
+				case 'purge':
+					qm.purgeQueue(node.qm.q);
 					break;
 				case 'release':
 					qm.setMaxActive(node.qm.q,node.maxActive);
@@ -40,18 +52,22 @@ module.exports = function(RED) {
 				case 'release1':
 					qm.release1(node.qm.q);
 					break;
+				case 'rollbackActive':
+					qm.rollbackActive(node.qm.q);
+					break;
 				default:
 					throw Error("unknown action: "+req.params.action);
 				}
 				res.sendStatus(200);
-			} catch(err) {
-				var reason1='Internal Server Error, '+req.params.action+' failed '+err.toString();
-				node.error(reason1);
-				res.status(500).send(reason1);
+			} catch(ex) {
+				const error='Internal Server Error, '+req.params.action+' failed '+ex.toString();
+				node.error(error);
+				res.status(500).send(error);
 			}
 		} else {
-			var reason2="request to "+req.params.action+" failed for id:" +req.params.id;
-			res.status(404).send(reason2);
+			const error="request to "+req.params.action+" failed for id:" +req.params.id +(node?" node type: "+node.type :" node not found");
+			logger.sendErrorAndDump(error,node);
+			res.status(404).send(error);
 		}
 	});   
 	RED.nodes.registerType(logger.label,QueueNode);
