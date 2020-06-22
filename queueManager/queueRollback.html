@@ -16,6 +16,13 @@
     	<label for="node-input-queueManager"><i class="fa fa-server"></i> Queue Manager</label>
     	<input type="text" id="node-input-queueManager">
   	</div>
+
+	<div class="form-row">
+		<label for="node-input-holdOnRollback"> Hold on Rollback</label>
+		<label for="node-input-holdOnRollback" style="width:70%">
+			<input type="checkbox" id="node-input-holdOnRollback" style="display:inline-block; width:22px; vertical-align:baseline;"><span data-i18n="debug.toHoldOnRollback"></span>
+		</label>
+	</div>
  
 </script>
 
@@ -24,6 +31,7 @@
     	category: 'function',
         defaults: {
             name: {value:"",required:false},
+            holdOnRollback: {value:false,required:false},
             queueManager: {type:"Queue Manager",required:true}
         },
 	    inputs:1,

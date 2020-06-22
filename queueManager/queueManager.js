@@ -262,10 +262,12 @@ function removeQueueWrapper (n) {
 	delete n.qm;
 }
 function addQueueWrapper (n,o) {
-	this.log("adding queue input wrapper for node "+nodeLabel(n));
+	const holdOnRollback=n.holdOnRollback||o.holdOnRollback||this.holdOnRollback||false;
+	this.log("adding queue input wrapper for node "+nodeLabel(n)+" holdOnRollback "+holdOnRollback);
 	if(n.showStatus) n.status({ fill: 'yellow', shape: 'dot', text: "Queue manager initialising"});
 	this.queues[n.id]={
 		node:n,
+		holdOnRollback:holdOnRollback,
 		maxRetries:(o.maxRetries||0),
 		maxTime:(o.maxTime||60000),
 		maxActive:(o.maxActive||10),
@@ -300,7 +302,7 @@ function addQueueWrapper (n,o) {
 	}
 	this.closeStack.push({node:this,removeFunction:removeQueueWrapper,argument:[n]});
 	if(n.showStatus) n.status({ fill: 'green', shape: 'ring', text: "ready"});
-	if(n.type=="Queue" && this.hold) n.qm.setMaxActive(n.qm.q,0);
+	if(n.type=="Queue" && this.hold) setMaxActive(n.qm.q,0);
 }
 function addSendOveride(n,id) {
 	if(n.orginalSend) {
@@ -371,7 +373,7 @@ function addRollbackWrapper (n) {
 	} catch(e) {
 		logger.sendError("addRollbackWrapper error "+e);
 	}
-	if(n.showStatus) n.status({ fill: 'yellow', shape: 'dot', text: "Queue manager initialising"});
+	if(n.showStatus) n.status({ fill: 'yellow', shape: 'dot', text: "Queue Manager initialising"});
 	if(!this.rollbacks) {this.rollbacks={};}
 	this.rollbacks[n.id]=true;
 	addSendOveride(n,"addRollbackWrapper");
@@ -379,6 +381,10 @@ function addRollbackWrapper (n) {
 		if(logger.active) logger.send({label:"addRollbackWrapper send",on:nodeLabel(this),msg:msg._msgid});
 		if(msg.qm) {
 			msg.qm.q.rollbackCnt++;
+			if(msg.qm.q.holdOnRollback || this.holdOnRollback) {
+				logger.sendWarning("rollback put queue on hold");
+				setMaxActive(msg.qm.q,0);
+			}
 			msg.stackProcessor.rollback(msg);
 		} else {
 			error(this,"message missing queue manager so message dropped, message will timeout",msg);
@@ -450,6 +456,7 @@ function qmList(RED) {
 			id:p,
 			node:(n.id||"*** internal error missing id"),
 			name:(n.name||"*** node not found"),
+			holdOnRollback:q.holdOnRollback,
 			maxTime:q.maxTime,
 			maxRetries:q.maxRetries,
 			maxActive:q.maxActive,

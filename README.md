@@ -111,6 +111,8 @@ Test/example flow in test/testflow.json which requires [loadbalance][4]
 
 # Version
 
+0.2.3 Add hold queue on rollback to QM, queue and rollback. 
+
 0.2.2 Add a few more queue controls (+/- active). Get better details if fail. Fix bug with maximum allowed.  Display messages and add security around these calls.
 
 0.2.1 fix to work with node-red v1 which changed from emitters to callback

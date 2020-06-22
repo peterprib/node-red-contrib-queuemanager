@@ -35,9 +35,16 @@
 	</div>
 
 	<div class="form-row">
-		<label for="node-input-hold"> </label>
+		<label for="node-input-hold"> Hold</label>
 		<label for="node-input-hold" style="width:70%">
 			<input type="checkbox" id="node-input-hold" style="display:inline-block; width:22px; vertical-align:baseline;"><span data-i18n="debug.toHold"></span>
+		</label>
+	</div>
+
+	<div class="form-row">
+		<label for="node-input-holdOnRollback"> Hold on Rollback</label>
+		<label for="node-input-holdOnRollback" style="width:70%">
+			<input type="checkbox" id="node-input-holdOnRollback" style="display:inline-block; width:22px; vertical-align:baseline;"><span data-i18n="debug.toHoldOnRollback"></span>
 		</label>
 	</div>
 
@@ -76,6 +83,7 @@ function json2html(obj){
 		defaults: {
 			name: {value:"",required:false},
 			hold: {value:false,required:false},
+			holdOnRollback: {value:false,required:false},
 			maxActive: {value:10,required:true,validate:RED.validators.number()},
 			maxWaiting: {value:100,required:true,validate:RED.validators.number()},
 			maxTime: {value:60000,required:true,validate:RED.validators.number()}, // 1 minute
