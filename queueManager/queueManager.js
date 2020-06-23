@@ -51,6 +51,12 @@ function checkChanges(RED,current,revised,add,remove,change) {
 		}
 	}
 }
+function activateWaiting(q) {
+	if(logger.active) logger.send({label:"activateWaiting","q.waiting.length":q.waiting.length,"q.activeCnt":q.activeCnt,"q.maxActive":q.maxActive,"q.qm.active":q.qm.active,"q.qm.maxActive":q.qm.maxActive});
+	while( q.waiting.length>0 && q.activeCnt<q.maxActive && q.qm.active<q.qm.maxActive) {
+		activateMessage.apply(q.node,[q.waiting.pop()]);
+	}
+}
 function activateMessage(msg) {
 	if(logger.active) logger.send({label:"activateMessage",msg:msg._msgid});
 	let q=msg.qm.q;
@@ -63,6 +69,9 @@ function activateMessage(msg) {
 	} catch(e) {
 		error(this,"activateMessage failed: "+e);
 	}
+}
+function addStatusCheck(node) {
+	this.statusCheck.push(node);
 }
 function getMessages(q,max=10) {
 	let r=[];
@@ -267,10 +276,12 @@ function addQueueWrapper (n,o) {
 	if(n.showStatus) n.status({ fill: 'yellow', shape: 'dot', text: "Queue manager initialising"});
 	this.queues[n.id]={
 		node:n,
+		qm:this,
 		holdOnRollback:holdOnRollback,
 		maxRetries:(o.maxRetries||0),
 		maxTime:(o.maxTime||60000),
 		maxActive:(o.maxActive||10),
+		maxActiveSet:(o.maxActive||10),
 		maxWaiting:(o.maxWaiting||1000),
 		waiting:[],
 		active:{},
@@ -302,7 +313,7 @@ function addQueueWrapper (n,o) {
 	}
 	this.closeStack.push({node:this,removeFunction:removeQueueWrapper,argument:[n]});
 	if(n.showStatus) n.status({ fill: 'green', shape: 'ring', text: "ready"});
-	if(n.type=="Queue" && this.hold) setMaxActive(n.qm.q,0);
+	if(n.type=="Queue" && n.hold) hold(n.qm.q);
 }
 function addSendOveride(n,id) {
 	if(n.orginalSend) {
@@ -366,13 +377,14 @@ function removeSendWrapper(n) {
 		n.log("error removing send wrapper "+e);	
 	}
 }
-function addRollbackWrapper (n) {
+function addRollbackWrapper(n) {
 	if(logger.active) logger.send({label:"addRollbackWrapper"});
 	try{
-		this.log("adding rollback send wrapper to node "+nodeLabel(n)+" show status: "+n.showStatus);
+		this.log("adding rollback send wrapper to node "+nodeLabel(n)+" show status: "+n.showStatus+" holdOnRollback: "+n.holdOnRollback);
 	} catch(e) {
 		logger.sendError("addRollbackWrapper error "+e);
 	}
+	const holdOnRollback=n.holdOnRollback;
 	if(n.showStatus) n.status({ fill: 'yellow', shape: 'dot', text: "Queue Manager initialising"});
 	if(!this.rollbacks) {this.rollbacks={};}
 	this.rollbacks[n.id]=true;
@@ -381,9 +393,9 @@ function addRollbackWrapper (n) {
 		if(logger.active) logger.send({label:"addRollbackWrapper send",on:nodeLabel(this),msg:msg._msgid});
 		if(msg.qm) {
 			msg.qm.q.rollbackCnt++;
-			if(msg.qm.q.holdOnRollback || this.holdOnRollback) {
+			if(msg.qm.q.holdOnRollback || holdOnRollback) {
 				logger.sendWarning("rollback put queue on hold");
-				setMaxActive(msg.qm.q,0);
+				hold(msg.qm.q);
 			}
 			msg.stackProcessor.rollback(msg);
 		} else {
@@ -396,38 +408,57 @@ function addRollbackWrapper (n) {
 	this.closeStack.push({node:this,removeFunction:removeSendWrapper,argument:[n]});
 	if(n.showStatus) n.status({ fill: 'green', shape: 'ring', text: "ready"});
 }
-function emptyQueue(q) {
-	let i=0,msg
-	while(q.waiting.length>0) {
-		msg=q.waiting.shift();
-		i++
-		msg.stackProcessor.rollback(msg);
-	}
-	return i;
-}
-function purgeQueue(q) {
-	let i=0;
-	while(q.waiting.length>0) {
-		q.waiting.shift();
-		i++
-	}
-	return i;
-}
-function setMaxActive(q,n) {
-	q.maxActive=n;
-}
 function activeUp1(q) {
 	q.maxActive++;
+	q.maxActiveSet++;
 	release1(q);
 }
 function activeDown1(q,n) {
 	if(q.maxActive<0) return;
 	q.maxActive--;
+	q.maxActiveSet--;
+}
+function hold(q) {
+	if(logger.active) logger.send({label:"hold"});
+	q.maxActive=0;
+}
+function emptyQueue(q) {
+	let i=0,msg
+	while(q.waiting.length>0) {
+		msg=q.waiting.shift();
+		i++;
+		msg.stackProcessor.rollback(msg);
+	}
+	return i;
+}
+function holdAndRollbackActive(q){
+	hold(q);
+	while(q.active.length>0) msg.stackProcessor.rollback(q.active.shift());
+}
+function purgeQueue(q) {
+	let i=0;
+	while(q.waiting.length>0) {
+		q.waiting.shift();
+		i++;
+	}
+	return i;
+}
+function setMaxActive(q,n) {
+	q.maxActive=n;
+	q.maxActiveSet=n;
+}
+function release(q,maxActive) {
+	q.maxActive=q.maxActiveSet;
+	activateWaiting(q);
 }
 function release1(q) {
 	if(q.waiting.length>0) {
 		activateMessage.apply(q.node,[q.waiting.pop()]);
 	}
+}
+function rollbackActive(q) {
+	holdAndRollbackActive(q);
+	release(q);
 }
 function SetEndActive(msg) {
 	let q=msg.qm.q;
@@ -439,13 +470,8 @@ function SetEndActive(msg) {
 		q.node.warn("SetEndActived active msg ended even though actve is zero");
 		return;
 	}
-	while( q.waiting.length>0 && q.activeCnt<q.maxActive && q.node.active<q.node.maxActive) {
-		activateMessage.apply(q.node,[q.waiting.pop()]);
-	}
+	activateWaiting(q);
 	msg.qm.active--;
-}
-function addStatusCheck(node) {
-	this.statusCheck.push(node);
 }
 function qmList(RED) {
 	let q,n,queues={};
@@ -460,6 +486,7 @@ function qmList(RED) {
 			maxTime:q.maxTime,
 			maxRetries:q.maxRetries,
 			maxActive:q.maxActive,
+			maxActiveSet:q.maxActiveSet,
 			active:q.activeCnt,
 			maxWaiting:q.maxWaiting,
 			waiting:q.waiting.length,
@@ -512,7 +539,8 @@ module.exports = function(RED) {
 			addQueueWrapper:addQueueWrapper,addCheckpointWrapper:addCheckpointWrapper,addRollbackWrapper:addRollbackWrapper,
 			checkChanges:checkChanges,qmList:qmList,emptyQueue:emptyQueue,purgeQueue:purgeQueue,
 			setMaxActive:setMaxActive,release1:release1,getMessages:getMessages,addStatusCheck:addStatusCheck,
-			activeUp1:activeUp1,activeDown1:activeDown1
+			activeUp1:activeUp1,activeDown1:activeDown1,rollbackActive:rollbackActive,holdAndRollbackActive:holdAndRollbackActive,
+			release:release,hold:hold
 			},
 			n);
 		node.old={maxActive:node.maxActive,maxWaiting:node.maxWaiting};
@@ -547,10 +575,11 @@ module.exports = function(RED) {
 					}
 				}
 				if(logger.active) logger.send({label:"checkLoop",node:nodeLabel(q.node),activeCnt:q.activeCnt,maxActive:q.maxActive,nodeActive:node.active,nodeMaxActive:node.maxActive});
-				while (q.waiting.length && q.activeCnt<q.maxActive && node.active<node.maxActive) { // activate waiting messages if possible
+				activateWaiting(q);
+//				while (q.waiting.length && q.activeCnt<q.maxActive && node.active<node.maxActive) { // activate waiting messages if possible
 //					if(logger.active) logger.send({label:"checkLoop activateMessage"});
-					activateMessage.apply(q.node,[q.waiting.shift()]);
-				}
+//					activateMessage.apply(q.node,[q.waiting.shift()]);
+//				}
 				if(q.node.showStatus) {
 					q.node.status({fill:(q.maxActive>0?'green':'yellow'), shape: 'ring', text: (q.maxActive>0?'':'Paused ')+ "Active: "+q.activeCnt+" Waiting: "+q.waiting.length+" Rollback: "+(q.rollbackCnt||0)+" Timed out: "+(q.timeOutCnt||0) });
 				}

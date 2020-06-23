@@ -39,15 +39,15 @@ module.exports = function(RED) {
 					res.status(200).json(qm.getMessages(node.qm.q));
 					return;
 				case 'hold':
-					qm.setMaxActive(node.qm.q,0);
+					qm.hold(node.qm.q);
 					break;
-				case 'holdAndRollBackActive':
-					qm.setMaxActive(node.qm.q,0);
+				case 'holdAndRollbackActive':
+					qm.holdAndRollbackActive(node.qm.q);
 				case 'purge':
 					qm.purgeQueue(node.qm.q);
 					break;
 				case 'release':
-					qm.setMaxActive(node.qm.q,node.maxActive);
+					qm.release(node.qm.q,node.maxActive);
 					break;
 				case 'release1':
 					qm.release1(node.qm.q);
