@@ -14,7 +14,7 @@ module.exports = function(RED) {
 	RED.httpAdmin.get("/queue/:id/:action", RED.auth.needsPermission('admin.write'), function(req,res) {
 		const warning="Request to "+req.params.action;
 		logger.sendWarning(warning);
-		let node=RED.nodes.getNode(req.params.id);
+		const node=RED.nodes.getNode(req.params.id);
 		if (node && node.type===logger.label) {
 			try {
 				node.warn(warning);

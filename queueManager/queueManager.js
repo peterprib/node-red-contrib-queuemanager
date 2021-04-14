@@ -325,7 +325,7 @@ function addSendOveride(n,id) {
 	if(logger.active) {
 		n.orginalSendDebug=orginalSend;
 		n.orginalSend=function(msg) {
-			logger.sendInfo("queue Manager "+id+" orginalSend "+msgDebug(msg));
+			if(logger.active) logger.sendInfo("queue Manager "+id+" orginalSend "+msgDebug(msg));
 			this.orginalSendDebug(msg);
 		}
 	} else {
@@ -595,8 +595,8 @@ module.exports = function(RED) {
 		node.check=setInterval(checkLoop, node.checkInterval);
 		node.log("check loop started on interval "+node.checkInterval);
 	}
-	RED.events.on("nodes-started",function(done) {
-		if(logger.active) logger.send({label:"nodes-started",nodes:nodes.length});
+	RED.events.on("flows-started",function(done) {
+		if(logger.active) logger.send({label:"flows-started",nodes:nodes.length});
 		while(nodes.length) {
 			const n=nodes.pop();
 			try{
@@ -606,7 +606,7 @@ module.exports = function(RED) {
 			}
 		}
 		if(done) {
-			if(logger.active) logger.send({label:"nodes-started calling done"});
+			if(logger.active) logger.send({label:"flows-started calling done"});
 			done();
 		}
 	});

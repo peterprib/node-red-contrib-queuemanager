@@ -111,6 +111,8 @@ Test/example flow in test/testflow.json which requires [loadbalance][4]
 
 # Version
 
+0.2.5 nodes-started to flow-started
+
 0.2.4 bug fixes: hold and maximum action per qm.  action calls on queue 
 
 0.2.3 Add hold queue on rollback to QM, queue and rollback. 

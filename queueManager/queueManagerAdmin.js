@@ -37,7 +37,7 @@ module.exports = function(RED) {
 			node.send(msg);
 		});
 	}
-	RED.events.on("nodes-started",function() {
+	RED.events.on("flows-started",function() {
 		while(nodes.length>0) {
 			let node=nodes.pop();
 			node.log("Initialising for queue manager "+node.queueManager);
